@@ -1,0 +1,59 @@
+"use strict";
+
+var _http = _interopRequireDefault(require("http"));
+var _app = _interopRequireDefault(require("./app"));
+var _env = require("./config/env");
+var _database = require("./config/database");
+var _logger = require("./utils/logger");
+var _seed = require("./seeds/seed");
+var _cron = require("./config/cron");
+var _IngestionService = require("./services/IngestionService");
+var _fs = _interopRequireDefault(require("fs"));
+var _path = _interopRequireDefault(require("path"));
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+const startServer = async () => {
+  // Ensure upload directory exists
+  const uploadDir = _path.default.resolve(_env.env.UPLOAD_DIR);
+  if (!_fs.default.existsSync(uploadDir)) {
+    _fs.default.mkdirSync(uploadDir, {
+      recursive: true
+    });
+    _logger.logger.info(`Created upload directory: ${uploadDir}`);
+  }
+
+  // Connect to MongoDB
+  await (0, _database.connectDatabase)();
+
+  // Initialize background jobs
+  (0, _cron.startCronJobs)();
+
+  // Seed database and run initial ingestion in development
+  if (_env.env.NODE_ENV === 'development') {
+    await (0, _seed.seedDatabase)();
+    // Run an initial ingestion immediately for testing
+    _IngestionService.ingestionService.runIngestion().catch(e => _logger.logger.error('Initial ingestion failed', e));
+  }
+
+  // Create HTTP server (needed for Socket.IO later)
+  const server = _http.default.createServer(_app.default);
+  server.listen(_env.env.PORT, () => {
+    _logger.logger.info(`🚀 DISASTER-X Server running on port ${_env.env.PORT}`);
+    _logger.logger.info(`📡 Environment: ${_env.env.NODE_ENV}`);
+    _logger.logger.info(`🔗 Client URL: ${_env.env.CLIENT_URL}`);
+  });
+
+  // Graceful shutdown
+  const shutdown = async signal => {
+    _logger.logger.info(`${signal} received. Shutting down gracefully...`);
+    server.close(() => {
+      _logger.logger.info('Server closed');
+      process.exit(0);
+    });
+  };
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
+};
+startServer().catch(err => {
+  _logger.logger.error('Failed to start server:', err);
+  process.exit(1);
+});

@@ -1,0 +1,101 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+:root {
+  --color-dx-bg: #050a12;
+  --color-dx-surface: rgba(13, 22, 38, 0.6);
+  --color-dx-surface-hover: rgba(23, 38, 66, 0.8);
+  --color-dx-cyan: #00f0ff;
+  --color-dx-blue: #0a4dff;
+  --color-dx-red: #ff3366;
+  --color-dx-orange: #ff9900;
+  --color-dx-yellow: #ffcc00;
+  --color-dx-green: #00cc66;
+}
+
+body {
+  background-color: var(--color-dx-bg);
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+  overflow: hidden;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'JetBrains Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.glass-panel {
+  background: var(--color-dx-surface);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 240, 255, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+}
+
+.glass-panel-strong {
+  background: rgba(8, 14, 25, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 240, 255, 0.05);
+}
+
+.glow-cyan {
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.2), inset 0 0 10px rgba(0, 240, 255, 0.1);
+}
+
+.glow-red {
+  box-shadow: 0 0 15px rgba(255, 51, 102, 0.2), inset 0 0 10px rgba(255, 51, 102, 0.1);
+}
+
+.font-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 240, 255, 0.3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 240, 255, 0.6);
+}
+
+@keyframes routeFlowAnim {
+  from {
+    stroke-dashoffset: 20;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes snapchatAuraPulse {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.95;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0.6;
+  }
+}
