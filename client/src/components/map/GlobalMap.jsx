@@ -5,26 +5,31 @@ import { useMapStore } from '../../stores/mapStore';
 import { useDisasterStore } from '../../stores/disasterStore';
 import { useLocationStore } from '../../stores/locationStore';
 import { useShelterStore } from '../../stores/shelterStore';
-import { DISASTER_TYPE_CONFIG, SEVERITY_CONFIG } from '../../types/disaster';
+import { useLandslideStore } from '../../stores/landslideStore';
+import { useSensorStore } from '../../stores/sensorStore';
+import { useRainfallStore } from '../../stores/rainfallStore';
+import { DISASTER_TYPE_CONFIG, SEVERITY_CONFIG, RISK_LEVEL_CONFIG } from '../../types/disaster';
 import { distance, point } from '@turf/turf';
-const MAP_STYLE = {
+import { SUBSEA_CABLES_GEOJSON, GLOBAL_INCIDENTS, getSolarTerminatorGeoJSON } from '../../utils/osirisGeoData';
+const CARTO_DARK_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
+
+const SATELLITE_STYLE = {
   version: 8,
   sources: {
-    'raster-tiles': {
+    'satellite-tiles': {
       type: 'raster',
       tiles: [
-        'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
+        'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
       ],
       tileSize: 256,
-      attribution: 'Map data © Esri',
-      maxzoom: 16
+      maxzoom: 19
     }
   },
   layers: [
     {
-      id: 'simple-tiles',
+      id: 'satellite-layer',
       type: 'raster',
-      source: 'raster-tiles',
+      source: 'satellite-tiles',
       minzoom: 0,
       maxzoom: 22
     }
@@ -34,10 +39,17 @@ export const GlobalMap = () => {
   const mapContainer = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef(new Map());
+  
+  // UI map projection states - 2D Mercator ensures rock-solid marker anchoring during zoom
+  const [projectionMode, setProjectionMode] = useState('2D'); // '2D' or '3D'
+  const [tileMode, setTileMode] = useState('MAP'); // 'MAP' or 'SAT'
+  const [cursorPos, setCursorPos] = useState({ lat: 25.17, lng: 92.73, location: 'North Eastern Region, India' });
+
   const {
     center,
     zoom,
-    showLayers
+    showLayers,
+    setSelectedEntity
   } = useMapStore();
   const {
     disasters,
@@ -49,28 +61,74 @@ export const GlobalMap = () => {
     setUserLocation,
     setProximityWarnings,
     activeRoute,
-    destinationCoords
+    destinationCoords,
+    calculateSafeRoute
   } = useLocationStore();
+
+  useEffect(() => {
+    window.__navigateToShelter = (coords, name) => {
+      calculateSafeRoute(coords, name);
+    };
+    return () => {
+      delete window.__navigateToShelter;
+    };
+  }, [calculateSafeRoute]);
   
   const { shelters, fetchShelters } = useShelterStore();
   const shelterMarkersRef = useRef(new Map());
+
+  const { zones, fetchZones, selectedZone, setSelectedZone, roads, fetchRoads } = useLandslideStore();
+  const { sensors, fetchSensors } = useSensorStore();
+  const { rainfallData, fetchRainfallData } = useRainfallStore();
+
+  const zoneMarkersRef = useRef(new Map());
+  const sensorMarkersRef = useRef(new Map());
+  const rainfallMarkersRef = useRef(new Map());
+
   const routeMarkerRef = useRef(null);
   const [routePathD, setRoutePathD] = useState('');
 
-  // Fetch shelters on mount
+  // Fetch shelters and landslide telemetry on mount
   useEffect(() => {
     fetchShelters();
-  }, [fetchShelters]);
+    fetchZones();
+    fetchRoads();
+    fetchSensors();
+    fetchRainfallData();
+  }, [fetchShelters, fetchZones, fetchRoads, fetchSensors, fetchRainfallData]);
 
   // Initialize map
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
+
+    const styleEl = document.createElement('style');
+    styleEl.id = 'map-animation-styles';
+    styleEl.innerHTML = `
+      @keyframes landslideSlide {
+        0% { transform: translateY(-4px) translateX(0) scale(1); opacity: 0; }
+        20% { opacity: 1; }
+        80% { opacity: 1; }
+        100% { transform: translateY(8px) translateX(-5px) scale(0.6); opacity: 0; }
+      }
+      @keyframes raindropFall {
+        0% { transform: translateY(-2px); opacity: 0; }
+        20% { opacity: 1; }
+        80% { opacity: 1; }
+        100% { transform: translateY(10px); opacity: 0; }
+      }
+    `;
+    document.head.appendChild(styleEl);
+
     const map = new maplibregl.Map({
       container: mapContainer.current,
-      style: MAP_STYLE,
+      style: CARTO_DARK_STYLE,
       center: center,
       zoom: zoom,
-      minZoom: 2,
+      pitch: 0,
+      bearing: 0,
+      maxPitch: 85,
+      projection: { type: 'mercator' },
+      minZoom: 1.5,
       maxZoom: 18,
       attributionControl: true,
       antialias: true
@@ -99,6 +157,107 @@ export const GlobalMap = () => {
     
     map.on('load', () => {
       geolocate.trigger();
+
+      // 1. Add Subsea Fiber Optic Cables Layer
+      if (!map.getSource('osiris-cables')) {
+        map.addSource('osiris-cables', {
+          type: 'geojson',
+          data: SUBSEA_CABLES_GEOJSON
+        });
+
+        // Glow line
+        map.addLayer({
+          id: 'osiris-cables-glow',
+          type: 'line',
+          source: 'osiris-cables',
+          paint: {
+            'line-color': '#00f0ff',
+            'line-width': 4,
+            'line-opacity': 0.35
+          }
+        });
+
+        // Main optic cable line
+        map.addLayer({
+          id: 'osiris-cables-line',
+          type: 'line',
+          source: 'osiris-cables',
+          paint: {
+            'line-color': '#00a8ff',
+            'line-width': 1.5,
+            'line-opacity': 0.8
+          }
+        });
+
+        map.on('click', 'osiris-cables-line', (e) => {
+          if (e.features && e.features[0]) {
+            const props = e.features[0].properties;
+            setSelectedEntity({
+              title: props.name || 'Submarine Optic Fiber Cable',
+              category: 'cables',
+              source: 'Subsea Intelligence Network',
+              capacity: props.capacity || '40 Tbps',
+              coords: [e.lngLat.lng, e.lngLat.lat],
+              details: `High-capacity optical fiber cable route transmitting trans-oceanic telecommunications and cloud data traffic.`
+            });
+          }
+        });
+      }
+
+      // 2. Add Solar Day/Night Shadow Terminator Overlay
+      if (!map.getSource('osiris-terminator')) {
+        map.addSource('osiris-terminator', {
+          type: 'geojson',
+          data: getSolarTerminatorGeoJSON()
+        });
+
+        map.addLayer({
+          id: 'osiris-terminator-layer',
+          type: 'fill',
+          source: 'osiris-terminator',
+          paint: {
+            'fill-color': '#02050c',
+            'fill-opacity': 0.45
+          }
+        });
+      }
+
+      // 3. Add Global Conflict & Strategic Incident Markers (matching OSIRIS UI screenshot)
+      GLOBAL_INCIDENTS.forEach((inc) => {
+        const el = document.createElement('div');
+        el.className = 'cursor-pointer group flex flex-col items-center select-none';
+        
+        const isCritical = inc.level === 'CRITICAL';
+        const colorClass = isCritical ? 'text-red-500 bg-red-950/80 border-red-500' : 'text-amber-400 bg-amber-950/80 border-amber-500';
+
+        el.innerHTML = `
+          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded border text-[10px] font-mono font-bold shadow-2xl backdrop-blur-md ${colorClass} group-hover:scale-110 transition-transform">
+            <span className="w-1.5 h-1.5 rounded-full ${isCritical ? 'bg-red-500 animate-ping' : 'bg-amber-400'}"></span>
+            <span>${inc.title}</span>
+          </div>
+          <div className="text-[8px] font-mono text-gray-400 group-hover:text-white uppercase tracking-tighter shadow-md">
+            ${inc.subtitle}
+          </div>
+        `;
+
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          setSelectedEntity(inc);
+        });
+
+        new maplibregl.Marker({ element: el, anchor: 'center' })
+          .setLngLat(inc.coords)
+          .addTo(map);
+      });
+    });
+
+    // Track mouse coordinates for OSIRIS cursor bar
+    map.on('mousemove', (e) => {
+      setCursorPos({
+        lat: e.lngLat.lat.toFixed(4),
+        lng: e.lngLat.lng.toFixed(4),
+        location: e.lngLat.lng > 88 && e.lngLat.lng < 97 && e.lngLat.lat > 21 && e.lngLat.lat > 30 ? 'North Eastern Region, India' : 'Global Coordinates'
+      });
     });
     
     const resizeObserver = new ResizeObserver(() => {
@@ -112,8 +271,42 @@ export const GlobalMap = () => {
       resizeObserver.disconnect();
       map.remove();
       mapRef.current = null;
+      const style = document.getElementById('map-animation-styles');
+      if (style) style.remove();
     };
   }, []);
+
+  // Switch between CARTO Dark Matter and Satellite tiles dynamically
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (tileMode === 'SAT') {
+      map.setStyle(SATELLITE_STYLE);
+    } else {
+      map.setStyle(CARTO_DARK_STYLE);
+    }
+  }, [tileMode]);
+
+  // Switch between 3D Globe and 2D Mercator projection dynamically
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    try {
+      if (projectionMode === '3D') {
+        if (typeof map.setProjection === 'function') {
+          map.setProjection({ type: 'globe' });
+        }
+        map.easeTo({ pitch: 45, bearing: -15, duration: 1000 });
+      } else {
+        if (typeof map.setProjection === 'function') {
+          map.setProjection({ type: 'mercator' });
+        }
+        map.easeTo({ pitch: 0, bearing: 0, duration: 1000 });
+      }
+    } catch (err) {
+      console.log('[MAP] Projection error:', err);
+    }
+  }, [projectionMode]);
 
   // Calculate proximity warnings
   useEffect(() => {
@@ -303,6 +496,8 @@ export const GlobalMap = () => {
     const sevConfig = SEVERITY_CONFIG[disaster.severity];
     const isCritical = disaster.severity === 'CRITICAL';
     const isHigh = disaster.severity === 'HIGH';
+
+    // Root marker container - zero width/height, perfectly centered, NO transition on transform!
     const el = document.createElement('div');
     el.className = 'disaster-marker';
     el.style.cssText = `
@@ -311,10 +506,23 @@ export const GlobalMap = () => {
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: transform 0.2s ease;
+      width: 0px;
+      height: 0px;
     `;
 
-    // Snapchat Map Style Danger Zone Heat Aura
+    // Inner wrapper that handles scaling/hover effects without overriding MapLibre's translate
+    const inner = document.createElement('div');
+    inner.style.cssText = `
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.15s ease-out;
+      transform-origin: center center;
+    `;
+    el.appendChild(inner);
+
+    // Danger Zone Heat Aura
     const snapchatAura = document.createElement('div');
     const auraSize = isCritical ? 64 : isHigh ? 50 : 38;
     snapchatAura.style.cssText = `
@@ -329,7 +537,7 @@ export const GlobalMap = () => {
       pointer-events: none;
       z-index: 1;
     `;
-    el.appendChild(snapchatAura);
+    inner.appendChild(snapchatAura);
 
     // Pulse ring for critical/high severity
     if (isCritical || isHigh) {
@@ -343,11 +551,11 @@ export const GlobalMap = () => {
         opacity: 0;
         animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
       `;
-      el.appendChild(ring);
+      inner.appendChild(ring);
       if (isCritical) {
         const ring2 = document.createElement('div');
         ring2.style.cssText = ring.style.cssText + 'animation-delay: 0.7s;';
-        el.appendChild(ring2);
+        inner.appendChild(ring2);
       }
     }
 
@@ -364,7 +572,7 @@ export const GlobalMap = () => {
       position: relative;
       z-index: 2;
     `;
-    el.appendChild(dot);
+    inner.appendChild(dot);
 
     // Icon inside for larger markers
     if (size >= 16) {
@@ -379,16 +587,16 @@ export const GlobalMap = () => {
         line-height: 1;
       `;
       icon.textContent = typeConfig.icon;
-      el.appendChild(icon);
+      inner.appendChild(icon);
     }
 
-    // Hover effect
+    // Hover effect on inner wrapper to never touch MapLibre's root translation
     el.addEventListener('mouseenter', () => {
-      el.style.transform = 'scale(1.3)';
-      el.style.zIndex = '10';
+      inner.style.transform = 'scale(1.35)';
+      el.style.zIndex = '100';
     });
     el.addEventListener('mouseleave', () => {
-      el.style.transform = 'scale(1)';
+      inner.style.transform = 'scale(1)';
       el.style.zIndex = '1';
     });
     return el;
@@ -461,7 +669,8 @@ export const GlobalMap = () => {
         maxWidth: '300px'
       }).setHTML(createPopupContent(disaster));
       const marker = new maplibregl.Marker({
-        element: el
+        element: el,
+        anchor: 'center'
       }).setLngLat(disaster.location.coordinates).setPopup(popup).addTo(mapRef.current);
       el.addEventListener('click', () => {
         setSelectedDisaster(disaster);
@@ -504,16 +713,22 @@ export const GlobalMap = () => {
       
       const popup = new maplibregl.Popup({ offset: 15, closeButton: true })
         .setHTML(`
-          <div style="padding: 10px;">
-            <h3 style="margin:0 0 5px; color:#00cc66; font-size:14px;">${shelter.name}</h3>
+          <div style="padding: 10px; font-family: monospace;">
+            <h3 style="margin:0 0 5px; color:#00cc66; font-size:13px; font-weight:bold;">${shelter.name}</h3>
             <p style="margin:0 0 5px; font-size:11px; color:#a0aec0;">${shelter.address}</p>
-            <p style="margin:0; font-size:12px; font-weight:bold;">
+            <p style="margin:0 0 8px; font-size:11px; font-weight:bold; color:#e2e8f0;">
               Capacity: ${shelter.currentOccupancy} / ${shelter.capacity}
             </p>
+            <button
+              onclick="window.__navigateToShelter && window.__navigateToShelter([${shelter.location.coordinates[0]}, ${shelter.location.coordinates[1]}], '${shelter.name.replace(/'/g, "\\'")}')"
+              style="width:100%; padding:5px 8px; background:rgba(0,255,102,0.15); border:1px solid #00ff66; border-radius:4px; color:#00ff66; font-size:10px; font-weight:bold; cursor:pointer;"
+            >
+              🧭 SAFE ROUTE TO SHELTER
+            </button>
           </div>
         `);
         
-      const marker = new maplibregl.Marker({ element: el })
+      const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
         .setLngLat(shelter.location.coordinates)
         .setPopup(popup)
         .addTo(mapRef.current);
@@ -521,6 +736,257 @@ export const GlobalMap = () => {
       shelterMarkersRef.current.set(shelter._id, marker);
     });
   }, [shelters, showLayers.shelters]);
+
+  // Render Landslide Risk Zones
+  useEffect(() => {
+    if (!mapRef.current) return;
+    
+    // Clean up if layer hidden
+    if (!showLayers.landslideRiskZones) {
+      zoneMarkersRef.current.forEach(marker => marker.remove());
+      zoneMarkersRef.current.clear();
+      return;
+    }
+
+    zones.forEach(zone => {
+      if (zoneMarkersRef.current.has(zone._id)) return;
+      
+      const config = RISK_LEVEL_CONFIG[zone.riskLevel] || { color: '#ffffff', bg: 'rgba(255,255,255,0.1)' };
+      
+      const el = document.createElement('div');
+      el.className = 'zone-marker';
+      el.style.cssText = `
+        position: relative;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      `;
+
+      // Snapchat style threat aura
+      const aura = document.createElement('div');
+      const size = zone.riskLevel === 'CRITICAL' ? 56 : zone.riskLevel === 'HIGH' ? 44 : 32;
+      aura.style.cssText = `
+        position: absolute;
+        width: ${size}px;
+        height: ${size}px;
+        border-radius: 50%;
+        background: radial-gradient(circle, ${config.color}55 0%, ${config.color}11 60%, transparent 80%);
+        border: 1px dashed ${config.color}88;
+        animation: snapchatAuraPulse 3s ease-in-out infinite;
+        pointer-events: none;
+      `;
+      el.appendChild(aura);
+
+      const animContainer = document.createElement('div');
+      animContainer.className = 'landslide-anim';
+      animContainer.style.cssText = `
+        position: relative;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2;
+      `;
+      animContainer.innerHTML = `
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${config.color}" stroke-width="2">
+          <path d="M3 20 L13 8 L17 13 L21 20 Z" fill="${config.color}22" />
+          <path d="M11 10.5 L8 14" stroke="${config.color}" stroke-dasharray="2 2" />
+        </svg>
+        <div class="rock" style="position: absolute; width: 4px; height: 4px; background: ${config.color}; border-radius: 1px; animation: landslideSlide 1.5s infinite linear; top: 8px; left: 10px;"></div>
+        <div class="rock" style="position: absolute; width: 3px; height: 3px; background: ${config.color}; border-radius: 1px; animation: landslideSlide 1.5s infinite linear; animation-delay: 0.5s; top: 10px; left: 12px;"></div>
+        <div class="rock" style="position: absolute; width: 4.5px; height: 4.5px; background: ${config.color}; border-radius: 50%; animation: landslideSlide 1.5s infinite linear; animation-delay: 1.0s; top: 7px; left: 11px;"></div>
+      `;
+      el.appendChild(animContainer);
+
+      const popup = new maplibregl.Popup({ offset: 15, closeButton: true })
+        .setHTML(`
+          <div style="padding: 10px; font-family: 'JetBrains Mono', monospace;">
+            <h3 style="margin:0 0 5px; color:${config.color}; font-size:12px; font-weight:bold;">${zone.name}</h3>
+            <p style="margin:0 0 5px; font-size:10px; color:#a0aec0;">ID: ${zone.zoneId} | ${zone.district}</p>
+            <div style="display:flex; justify-content:space-between; font-size:11px; margin-top:5px;">
+              <span>Probability:</span>
+              <span style="font-weight:bold; color:${config.color};">${zone.probability}%</span>
+            </div>
+            <div style="font-size:9px; color:#718096; margin-top:5px;">Click to view explainable drivers</div>
+          </div>
+        `);
+
+      el.addEventListener('click', () => {
+        setSelectedZone(zone);
+      });
+
+      const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+        .setLngLat(zone.location.coordinates)
+        .setPopup(popup)
+        .addTo(mapRef.current);
+        
+      zoneMarkersRef.current.set(zone._id, marker);
+    });
+  }, [zones, showLayers.landslideRiskZones, setSelectedZone]);
+
+  // Render Soil Moisture Sensors
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    if (!showLayers.soilSensors) {
+      sensorMarkersRef.current.forEach(marker => marker.remove());
+      sensorMarkersRef.current.clear();
+      return;
+    }
+
+    sensors.forEach(sensor => {
+      if (sensorMarkersRef.current.has(sensor._id)) return;
+
+      const isCritical = sensor.currentStatus === 'CRITICAL';
+      const isWarning = sensor.currentStatus === 'WARNING';
+      const color = isCritical ? '#ef4444' : isWarning ? '#f97316' : '#10b981';
+
+      const el = document.createElement('div');
+      el.className = 'sensor-marker';
+      el.style.cssText = `
+        width: 22px;
+        height: 22px;
+        background: #0d1626;
+        border-radius: 6px;
+        border: 2.5px solid ${color};
+        box-shadow: 0 0 10px ${color}66;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        cursor: pointer;
+        z-index: 4;
+      `;
+      el.textContent = '📟';
+
+      const popup = new maplibregl.Popup({ offset: 15, closeButton: true })
+        .setHTML(`
+          <div style="padding: 10px; font-family: 'JetBrains Mono', monospace;">
+            <h3 style="margin:0 0 5px; color:${color}; font-size:12px; font-weight:bold;">${sensor.name}</h3>
+            <p style="margin:0; font-size:11px; color:#e2e8f0;">Soil Moisture: <b>${sensor.currentMoisture}%</b></p>
+            <p style="margin:3px 0 0; font-size:10px; color:#a0aec0;">Trend: ${sensor.trend} | Depth: ${sensor.depth}cm</p>
+          </div>
+        `);
+
+      const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+        .setLngLat(sensor.location.coordinates)
+        .setPopup(popup)
+        .addTo(mapRef.current);
+
+      sensorMarkersRef.current.set(sensor._id, marker);
+    });
+  }, [sensors, showLayers.soilSensors]);
+
+  // Render Rainfall Observations
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    if (!showLayers.rainfallObservations) {
+      rainfallMarkersRef.current.forEach(marker => marker.remove());
+      rainfallMarkersRef.current.clear();
+      return;
+    }
+
+    rainfallData.forEach(obs => {
+      if (rainfallMarkersRef.current.has(obs._id)) return;
+
+      const isHeavy = obs.intensity === 'HEAVY' || obs.intensity === 'VERY_HEAVY' || obs.intensity === 'EXTREME';
+      const color = isHeavy ? '#ef4444' : '#3b82f6';
+
+      const el = document.createElement('div');
+      el.className = 'rainfall-marker';
+      el.style.cssText = `
+        position: relative;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 4;
+      `;
+      el.innerHTML = `
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.5" style="position: absolute; top: 0px; z-index: 2;">
+          <path d="M17.5 19A3.5 3.5 0 0 0 21 15.5c0-2.79-2.54-4.5-5-4.5-.39 0-.76.07-1.1.2C13.9 8.2 10.7 6 7 6a7 7 0 0 0-7 7c0 2.52 1.34 4.73 3.33 6" fill="#0d1626" />
+        </svg>
+        <div class="drop" style="position: absolute; width: 1.5px; height: 5px; background: ${color}; border-radius: 1px; animation: raindropFall 0.8s infinite linear; left: 10px; top: 16px;"></div>
+        <div class="drop" style="position: absolute; width: 1.5px; height: 5px; background: ${color}; border-radius: 1px; animation: raindropFall 0.8s infinite linear; animation-delay: 0.25s; left: 14px; top: 17px;"></div>
+        <div class="drop" style="position: absolute; width: 1.5px; height: 5px; background: ${color}; border-radius: 1px; animation: raindropFall 0.8s infinite linear; animation-delay: 0.5s; left: 18px; top: 15px;"></div>
+      `;
+
+      const popup = new maplibregl.Popup({ offset: 15, closeButton: true })
+        .setHTML(`
+          <div style="padding: 10px; font-family: 'JetBrains Mono', monospace;">
+            <h3 style="margin:0 0 5px; color:${color}; font-size:12px; font-weight:bold;">${obs.stationName}</h3>
+            <p style="margin:0; font-size:11px; color:#e2e8f0;">24h Rainfall: <b>${obs.rainfall24h || 0}mm</b></p>
+            <p style="margin:3px 0 0; font-size:10px; color:#a0aec0;">Intensity: ${obs.intensity} | Anomaly: ${obs.anomaly}%</p>
+          </div>
+        `);
+
+      const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+        .setLngLat(obs.location.coordinates)
+        .setPopup(popup)
+        .addTo(mapRef.current);
+
+      rainfallMarkersRef.current.set(obs._id, marker);
+    });
+  }, [rainfallData, showLayers.rainfallObservations]);
+
+  // Render Highway Risk segments
+  const roadMarkersRef = useRef(new Map());
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    if (!showLayers.roadRisks) {
+      roadMarkersRef.current.forEach(marker => marker.remove());
+      roadMarkersRef.current.clear();
+      return;
+    }
+
+    roads.forEach(road => {
+      if (roadMarkersRef.current.has(road._id)) return;
+
+      const isBlocked = road.riskStatus === 'BLOCKED';
+      const isAtRisk = road.riskStatus === 'AT_RISK';
+      const color = isBlocked ? '#ef4444' : isAtRisk ? '#f97316' : '#10b981';
+
+      const el = document.createElement('div');
+      el.className = 'road-marker';
+      el.style.cssText = `
+        padding: 2px 6px;
+        background: #0d1626;
+        border-radius: 4px;
+        border: 2px solid ${color};
+        box-shadow: 0 0 10px ${color}aa;
+        color: #ffffff;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        z-index: 6;
+      `;
+      el.textContent = road.roadNumber || road.name.split(' ')[0];
+
+      const popup = new maplibregl.Popup({ offset: 15, closeButton: true })
+        .setHTML(`
+          <div style="padding: 10px; font-family: 'JetBrains Mono', monospace;">
+            <h3 style="margin:0 0 5px; color:${color}; font-size:12px; font-weight:bold;">${road.name}</h3>
+            <p style="margin:0; font-size:11px; color:#e2e8f0;">Status: <b style="color:${color}">${road.riskStatus}</b></p>
+            <p style="margin:3px 0 0; font-size:10px; color:#a0aec0;">Risk Score: ${road.riskScore} | Connects: ${road.connectsVillages?.join(', ')}</p>
+          </div>
+        `);
+
+      const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+        .setLngLat(road.startPoint.coordinates)
+        .setPopup(popup)
+        .addTo(mapRef.current);
+
+      roadMarkersRef.current.set(road._id, marker);
+    });
+  }, [roads, showLayers.roadRisks]);
+
   return (
     <div className="absolute inset-0 overflow-hidden" style={{ top: '48px' }}>
       <div ref={mapContainer} className="w-full h-full" />
@@ -569,6 +1035,65 @@ export const GlobalMap = () => {
           </g>
         )}
       </svg>
+
+      {/* Tactical Bottom Left Map Overlay Bar */}
+      <div className="absolute bottom-12 left-16 z-30 flex flex-col gap-2 font-mono select-none">
+        <div className="flex items-center gap-1.5 p-1 rounded-lg bg-[#050a14]/90 backdrop-blur-md border border-[#e5b849]/30 shadow-2xl">
+          <button
+            onClick={() => {
+              setProjectionMode('3D');
+              if (mapRef.current) {
+                mapRef.current.easeTo({ pitch: 45, bearing: -15 });
+              }
+            }}
+            className={`osiris-pill flex items-center gap-1 ${projectionMode === '3D' ? 'active' : ''}`}
+          >
+            <span>🌐 3D</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setProjectionMode('2D');
+              if (mapRef.current) {
+                mapRef.current.easeTo({ pitch: 0, bearing: 0 });
+              }
+            }}
+            className={`osiris-pill flex items-center gap-1 ${projectionMode === '2D' ? 'active' : ''}`}
+          >
+            <span>👥 2D</span>
+          </button>
+
+          <div className="h-4 w-px bg-white/10 mx-0.5" />
+
+          <button
+            onClick={() => setTileMode('MAP')}
+            className={`osiris-pill flex items-center gap-1 ${tileMode === 'MAP' ? 'active' : ''}`}
+          >
+            <span>🌙 MAP</span>
+          </button>
+
+          <button
+            onClick={() => setTileMode('SAT')}
+            className={`osiris-pill flex items-center gap-1 ${tileMode === 'SAT' ? 'active' : ''}`}
+          >
+            <span>📡 SAT</span>
+          </button>
+        </div>
+
+        {/* Live Cursor Telemetry readout */}
+        <div className="px-3 py-1 rounded-md bg-[#03060a]/90 border border-[#00f0ff]/20 text-[10px] text-[#94a3b8] flex items-center gap-3 backdrop-blur-md shadow-xl">
+          <div>
+            <span className="text-[#64748b]">CURSOR</span>{' '}
+            <span className="text-[#00f0ff] font-bold">{cursorPos.lat}, {cursorPos.lng}</span>
+          </div>
+          <div className="h-3 w-px bg-white/10" />
+          <div className="truncate max-w-[280px]">
+            <span className="text-[#64748b]">LOCATION</span>{' '}
+            <span className="text-[#e5b849] font-bold">{cursorPos.location}</span>
+          </div>
+          <div className="text-[9px] text-[#00ff66] font-bold">200M 3.0</div>
+        </div>
+      </div>
     </div>
   );
 };

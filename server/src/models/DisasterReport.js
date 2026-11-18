@@ -71,6 +71,14 @@ const disasterReportSchema = new _mongoose.Schema({
     type: String,
     enum: ['PENDING', 'VERIFIED', 'REJECTED', 'LINKED'],
     default: 'PENDING'
+  },
+  landslideObservations: {
+    groundCracks: { type: Boolean, default: false },
+    tiltedTreesOrPoles: { type: Boolean, default: false },
+    soilMovement: { type: Boolean, default: false },
+    roadBlockage: { type: Boolean, default: false },
+    waterSeepage: { type: Boolean, default: false },
+    bouldersRolling: { type: Boolean, default: false }
   }
 }, {
   timestamps: true

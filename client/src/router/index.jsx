@@ -3,6 +3,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 const HomePage = lazy(() => import('../pages/HomePage'));
 const LoginPage = lazy(() => import('../pages/LoginPage'));
 const RegisterPage = lazy(() => import('../pages/RegisterPage'));
+const AdminCommandCenter = lazy(() => import('../pages/AdminCommandCenter'));
 const LoadingFallback = () => <div className="h-screen w-screen flex items-center justify-center bg-[var(--color-dx-bg)]">
     <div className="flex flex-col items-center gap-4">
       <div className="w-8 h-8 border-2 border-[var(--color-dx-cyan)] border-t-transparent rounded-full animate-spin" />
@@ -13,6 +14,11 @@ const router = createBrowserRouter([{
   path: '/',
   element: <Suspense fallback={<LoadingFallback />}>
         <HomePage />
+      </Suspense>
+}, {
+  path: '/admin',
+  element: <Suspense fallback={<LoadingFallback />}>
+        <AdminCommandCenter />
       </Suspense>
 }, {
   path: '/login',

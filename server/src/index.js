@@ -8,9 +8,13 @@ var _logger = require("./utils/logger");
 var _seed = require("./seeds/seed");
 var _cron = require("./config/cron");
 var _IngestionService = require("./services/IngestionService");
+var _socketio = require("./config/socketio");
+var _seedNER = require("./seeds/seedNER");
+var _chatController = require("./controllers/chatController");
 var _fs = _interopRequireDefault(require("fs"));
 var _path = _interopRequireDefault(require("path"));
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+
 const startServer = async () => {
   // Ensure upload directory exists
   const uploadDir = _path.default.resolve(_env.env.UPLOAD_DIR);
@@ -27,19 +31,29 @@ const startServer = async () => {
   // Initialize background jobs
   (0, _cron.startCronJobs)();
 
+  // Seed default community chat rooms
+  await (0, _chatController.seedDefaultRooms)();
+
   // Seed database and run initial ingestion in development
   if (_env.env.NODE_ENV === 'development') {
     await (0, _seed.seedDatabase)();
+    await (0, _seedNER.seedNERData)();
     // Run an initial ingestion immediately for testing
     _IngestionService.ingestionService.runIngestion().catch(e => _logger.logger.error('Initial ingestion failed', e));
   }
 
-  // Create HTTP server (needed for Socket.IO later)
+  // Create HTTP server
   const server = _http.default.createServer(_app.default);
+
+  // Wire up Socket.IO for real-time NER monitoring & Chat
+  (0, _socketio.setupSocketIO)(server, _env.env.CLIENT_URL);
+
   server.listen(_env.env.PORT, () => {
-    _logger.logger.info(`🚀 DISASTER-X Server running on port ${_env.env.PORT}`);
+    _logger.logger.info(`🚀 DISASTERLINK NER — Landslide Intelligence Platform`);
+    _logger.logger.info(`🏔️ Server running on port ${_env.env.PORT}`);
     _logger.logger.info(`📡 Environment: ${_env.env.NODE_ENV}`);
     _logger.logger.info(`🔗 Client URL: ${_env.env.CLIENT_URL}`);
+    _logger.logger.info(`🔌 Socket.IO: Active`);
   });
 
   // Graceful shutdown

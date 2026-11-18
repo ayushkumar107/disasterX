@@ -1,105 +1,200 @@
-import React from 'react';
-import { UTCClock } from '../common/UTCClock';
-import { ConnectionStatus } from '../common/ConnectionStatus';
+import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../../stores/authStore';
 import { useDisasterStore } from '../../stores/disasterStore';
 import { useUIStore } from '../../stores/uiStore';
-import { Shield, Bell, User, PanelLeftOpen, PanelRightOpen, PanelLeftClose, PanelRightClose, LogOut } from 'lucide-react';
+import { useMapStore } from '../../stores/mapStore';
+import { useChatStore } from '../../stores/chatStore';
+import { useLocationStore } from '../../stores/locationStore';
+import { 
+  Eye, 
+  PanelLeftOpen, 
+  PanelLeftClose, 
+  PanelRightOpen, 
+  PanelRightClose, 
+  User, 
+  LogOut, 
+  DollarSign, 
+  LifeBuoy,
+  Flame,
+  Globe,
+  Layers,
+  Shield,
+  Activity,
+  MessageSquare,
+  Navigation
+} from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-export const TopBar = () => {
-  const {
-    user,
-    isAuthenticated,
-    logout
-  } = useAuthStore();
-  const disasters = useDisasterStore(s => s.disasters);
-  const {
-    leftPanelOpen,
-    rightPanelOpen,
-    toggleLeftPanel,
-    toggleRightPanel
-  } = useUIStore();
-  const navigate = useNavigate();
-  const activeDisasters = disasters.filter(d => d.status === 'ACTIVE');
-  const criticalCount = activeDisasters.filter(d => d.severity === 'CRITICAL').length;
-  return <div className="fixed top-0 left-0 right-0 z-50 h-12 flex items-center justify-between px-4
-      bg-[rgba(5,10,18,0.9)] backdrop-blur-xl border-b border-[var(--color-dx-border)]">
 
-      {/* Left section */}
+export const TopBar = () => {
+  const { user, isAuthenticated, logout } = useAuthStore();
+  const disasters = useDisasterStore((s) => s.disasters);
+  const showLayers = useMapStore((s) => s.showLayers);
+  const { leftPanelOpen, rightPanelOpen, toggleLeftPanel, toggleRightPanel } = useUIStore();
+  const { toggleOpen: toggleChat, unreadCount } = useChatStore();
+  const routeToNearestShelter = useLocationStore((s) => s.routeToNearestShelter);
+  const activeRoute = useLocationStore((s) => s.activeRoute);
+  const navigate = useNavigate();
+
+  const [zuluTime, setZuluTime] = useState('');
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      const hours = String(now.getUTCHours()).padStart(2, '0');
+      const minutes = String(now.getUTCMinutes()).padStart(2, '0');
+      const seconds = String(now.getUTCSeconds()).padStart(2, '0');
+      const ms = String(now.getUTCMilliseconds()).padStart(3, '0');
+      setZuluTime(`${hours}:${minutes}:${seconds}:${ms}`);
+    };
+
+    updateTime();
+    const interval = setInterval(updateTime, 100);
+    return () => clearInterval(interval);
+  }, []);
+
+  const activeLayerCount = Object.values(showLayers).filter(Boolean).length;
+  const totalEntities = disasters.length + 1420; // real + telemetry estimation
+
+  return (
+    <header className="fixed top-0 left-0 right-0 z-50 h-14 px-3 flex items-center justify-between
+      bg-[#03060a]/90 backdrop-blur-md border-b border-[#00f0ff]/20 shadow-2xl">
+      
+      {/* Left Branding: Eye logo & Title */}
       <div className="flex items-center gap-3">
-        <button onClick={toggleLeftPanel} className="p-1.5 rounded-md hover:bg-[var(--color-dx-surface-hover)] transition-colors">
-          {leftPanelOpen ? <PanelLeftClose size={16} className="text-[var(--color-dx-muted)]" /> : <PanelLeftOpen size={16} className="text-[var(--color-dx-muted)]" />}
+        <button
+          onClick={toggleLeftPanel}
+          className="p-1.5 rounded text-[#94a3b8] hover:text-[#00f0ff] hover:bg-white/5 transition-colors"
+          title="Toggle Drawer"
+        >
+          {leftPanelOpen ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
         </button>
 
-        <div className="flex items-center gap-2">
-          <Shield size={20} className="text-[var(--color-dx-cyan)]" />
-          <span className="font-bold text-sm tracking-wider text-[var(--color-dx-white)]">
-            DISASTER<span className="text-[var(--color-dx-cyan)]">-X</span>
+        <div className="flex items-center gap-2.5 group cursor-pointer" onClick={() => navigate('/')}>
+          {/* Tactical Logo Icon */}
+          <div className="relative w-8 h-8 flex items-center justify-center rounded bg-[#070e18] border border-[#00f0ff]/50 shadow-[0_0_12px_rgba(0,240,255,0.3)]">
+            <Globe size={18} className="text-[#00f0ff] animate-pulse" />
+            <div className="absolute inset-0 rounded border border-[#00f0ff]/20 scale-110 animate-ping opacity-25" />
+          </div>
+
+          <div className="flex flex-col leading-tight">
+            <div className="flex items-center gap-2">
+              <span className="font-osiris font-black text-base text-[#00f0ff] tracking-[0.2em] drop-shadow-[0_0_8px_rgba(0,240,255,0.5)]">
+                DISASTERLINK
+              </span>
+              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-[#e5b849]/15 text-[#e5b849] border border-[#e5b849]/30">
+                NER 2.0
+              </span>
+            </div>
+            <span className="text-[8px] font-mono text-[#94a3b8] tracking-widest uppercase">
+              LANDSLIDE INTELLIGENCE • REAL-TIME GLOBAL MONITORING
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Middle Telemetry Bar */}
+      <div className="hidden lg:flex items-center gap-4 text-[11px] font-mono tracking-wider">
+        <div className="flex items-center gap-1.5 text-[#00f0ff]">
+          <span className="text-[9px] text-[#64748b] font-bold">ZULU</span>
+          <span className="font-bold text-[#00f0ff] drop-shadow-[0_0_6px_rgba(0,240,255,0.4)]">
+            {zuluTime || '00:00:00:000'}
           </span>
         </div>
 
-        <div className="h-4 w-px bg-[var(--color-dx-border)] mx-1" />
+        <div className="h-3 w-px bg-white/10" />
 
-        {/* Telemetry counters */}
-        <div className="hidden md:flex items-center gap-4">
-          <div className="flex items-center gap-1.5">
-            <span className="telemetry-label">Active</span>
-            <span className="font-mono text-xs text-[var(--color-dx-cyan)]">{activeDisasters.length}</span>
-          </div>
-          {criticalCount > 0 && <motion.div className="flex items-center gap-1.5" animate={{
-          opacity: [1, 0.5, 1]
-        }} transition={{
-          duration: 1.5,
-          repeat: Infinity
-        }}>
-              <span className="telemetry-label text-[var(--color-dx-critical)]">CRITICAL</span>
-              <span className="font-mono text-xs text-[var(--color-dx-critical)]">{criticalCount}</span>
-            </motion.div>}
+        <div className="flex items-center gap-1.5">
+          <span className="text-[9px] text-[#64748b]">TELEMETRY:</span>
+          <span className="text-[#e2e8f0] font-bold">{totalEntities}</span>
+          <span className="text-[9px] text-[#00ff66]">ACTIVE</span>
+        </div>
+
+        <div className="h-3 w-px bg-white/10" />
+
+        <div className="flex items-center gap-1.5">
+          <span className="text-[9px] text-[#64748b]">LAYERS:</span>
+          <span className="text-[#00f0ff] font-bold">{activeLayerCount}</span>
+          <span className="text-[9px] text-[#64748b]">ONLINE</span>
+        </div>
+
+        <div className="h-3 w-px bg-white/10" />
+
+        <div className="flex items-center gap-1.5">
+          <span className="text-[9px] text-[#64748b]">SOLAR:</span>
+          <span className="text-[#00ff66] font-bold">Kp2</span>
+          <span className="text-[9px] text-[#475569]">V.4.1</span>
         </div>
       </div>
 
-      {/* Center - UTC Clock */}
-      <div className="hidden sm:block">
-        <UTCClock />
-      </div>
+      {/* Right Controls & Actions */}
+      <div className="flex items-center gap-2.5">
+        {/* Safest Route to Nearest Shelter Button */}
+        <button
+          onClick={routeToNearestShelter}
+          className={`osiris-btn transition-all ${
+            activeRoute 
+              ? 'border-[#00ff66] text-[#00ff66] bg-[#00ff66]/20 shadow-[0_0_15px_rgba(0,255,102,0.4)]' 
+              : 'border-[#00ff66]/50 text-[#00ff66] hover:bg-[#00ff66]/15'
+          }`}
+          title="Show safest driving & evacuation direction to nearest emergency shelter"
+        >
+          <Navigation size={13} className={activeRoute ? 'text-[#00ff66] animate-pulse' : 'text-[#00ff66]'} />
+          <span className="font-bold">{activeRoute ? 'END ROUTE' : 'SHELTER ROUTE'}</span>
+        </button>
 
-      {/* Right section */}
-      <div className="flex items-center gap-3">
-        <ConnectionStatus />
+        {/* Emergency Chat Button */}
+        <button
+          onClick={toggleChat}
+          className="osiris-btn border-[#00f0ff]/50 text-[#00f0ff] hover:bg-[#00f0ff]/15 relative"
+        >
+          <MessageSquare size={13} className="text-[#00f0ff]" />
+          <span>CHAT</span>
+          {unreadCount > 0 && (
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse ml-0.5" />
+          )}
+        </button>
 
-        {isAuthenticated ? <>
-            <button className="relative p-1.5 rounded-md hover:bg-[var(--color-dx-surface-hover)] transition-colors">
-              <Bell size={16} className="text-[var(--color-dx-muted)]" />
-              {criticalCount > 0 && <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-[var(--color-dx-critical)]
-                  rounded-full text-[8px] flex items-center justify-center font-bold animate-blink">
-                  {criticalCount}
-                </span>}
-            </button>
+        <button className="hidden sm:inline-flex osiris-btn">
+          <LifeBuoy size={13} className="text-[#e5b849]" />
+          <span>SUPPORT</span>
+        </button>
 
-            <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-[var(--color-dx-surface)]
-              border border-[var(--color-dx-border)] cursor-pointer hover:border-[var(--color-dx-border-bright)] transition-colors">
-              <User size={14} className="text-[var(--color-dx-cyan)]" />
-              <span className="text-xs text-[var(--color-dx-muted)] hidden md:inline">{user?.name}</span>
-              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[rgba(0,212,255,0.1)]
-                text-[var(--color-dx-cyan)] border border-[rgba(0,212,255,0.2)]">
+        {isAuthenticated ? (
+          <div className="flex items-center gap-2 pl-2 border-l border-white/10">
+            <div className="flex items-center gap-2 px-2.5 py-1 rounded bg-[#070e18] border border-[#00f0ff]/30 text-xs">
+              <User size={13} className="text-[#00f0ff]" />
+              <span className="text-[#e2e8f0] font-mono hidden md:inline">{user?.name}</span>
+              <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-[#e5b849]/15 text-[#e5b849] font-bold">
                 {user?.role}
               </span>
             </div>
 
-            <button onClick={() => {
-          logout();
-          navigate('/login');
-        }} className="p-1.5 rounded-md hover:bg-[rgba(239,68,68,0.1)] transition-colors" title="Logout">
-              <LogOut size={14} className="text-[var(--color-dx-muted)] hover:text-[var(--color-dx-critical)]" />
+            <button
+              onClick={() => {
+                logout();
+                navigate('/login');
+              }}
+              className="p-1.5 rounded hover:bg-red-500/20 text-[#94a3b8] hover:text-red-400 transition-colors"
+              title="Logout"
+            >
+              <LogOut size={15} />
             </button>
-          </> : <button onClick={() => navigate('/login')} className="btn-primary text-xs">
-            Sign In
-          </button>}
+          </div>
+        ) : (
+          <button onClick={() => navigate('/login')} className="osiris-btn glow-gold">
+            SIGN IN
+          </button>
+        )}
 
-        <button onClick={toggleRightPanel} className="p-1.5 rounded-md hover:bg-[var(--color-dx-surface-hover)] transition-colors">
-          {rightPanelOpen ? <PanelRightClose size={16} className="text-[var(--color-dx-muted)]" /> : <PanelRightOpen size={16} className="text-[var(--color-dx-muted)]" />}
+        <button
+          onClick={toggleRightPanel}
+          className="p-1.5 rounded text-[#94a3b8] hover:text-[#00f0ff] hover:bg-white/5 transition-colors"
+          title="Toggle Telemetry Panel"
+        >
+          {rightPanelOpen ? <PanelRightClose size={18} /> : <PanelRightOpen size={18} />}
         </button>
       </div>
-    </div>;
+    </header>
+  );
 };

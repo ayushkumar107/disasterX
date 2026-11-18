@@ -7,10 +7,13 @@ exports.ingestionService = exports.IngestionService = void 0;
 var _USGSAdapter = require("./adapters/USGSAdapter");
 var _EONETAdapter = require("./adapters/EONETAdapter");
 var _GDACSAdapter = require("./adapters/GDACSAdapter");
+var _OsirisWeatherAdapter = require("./adapters/OsirisWeatherAdapter");
+var _OsirisEarthquakeAdapter = require("./adapters/OsirisEarthquakeAdapter");
+var _OsirisHazardsAdapter = require("./adapters/OsirisHazardsAdapter");
 var _Disaster = require("../models/Disaster");
 var _logger = require("../utils/logger");
 class IngestionService {
-  adapters = [new _USGSAdapter.USGSAdapter(), new _EONETAdapter.EONETAdapter(), new _GDACSAdapter.GDACSAdapter()];
+  adapters = [new _USGSAdapter.USGSAdapter(), new _EONETAdapter.EONETAdapter(), new _GDACSAdapter.GDACSAdapter(), new _OsirisWeatherAdapter.OsirisWeatherAdapter(), new _OsirisEarthquakeAdapter.OsirisEarthquakeAdapter(), new _OsirisHazardsAdapter.OsirisHazardsAdapter()];
   async runIngestion() {
     _logger.logger.info('🔄 Starting global disaster data ingestion...');
     const startTime = Date.now();

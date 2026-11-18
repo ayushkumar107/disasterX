@@ -27,5 +27,6 @@ const env = exports.env = {
   EONET_API_URL: process.env.EONET_API_URL || 'https://eonet.gsfc.nasa.gov/api/v3',
   GDACS_API_URL: process.env.GDACS_API_URL || 'https://www.gdacs.org/gdacsapi/api',
   MAX_FILE_SIZE: parseInt(process.env.MAX_FILE_SIZE || '10485760', 10),
-  UPLOAD_DIR: process.env.UPLOAD_DIR || './uploads'
+  UPLOAD_DIR: process.env.UPLOAD_DIR || './uploads',
+  OSIRIS_API_URL: process.env.OSIRIS_API_URL || 'https://osirisai.live/api'
 };

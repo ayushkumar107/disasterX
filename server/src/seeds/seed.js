@@ -271,6 +271,27 @@ const SEED_SHELTERS = [{
   },
   status: 'OPEN'
 }, {
+  name: 'Barabanki Emergency Relief Shelter',
+  location: {
+    type: 'Point',
+    coordinates: [81.19, 26.93]
+  },
+  address: 'Civil Lines, Faizabad Road, Barabanki, UP 225001, India',
+  capacity: 850,
+  currentOccupancy: 65,
+  amenities: {
+    water: true,
+    food: true,
+    medical: true,
+    electricity: true,
+    wifi: true
+  },
+  contact: {
+    phone: '+91-5242-220100',
+    email: 'shelter.barabanki@disasterlink.gov.in'
+  },
+  status: 'OPEN'
+}, {
   name: 'Central Emergency Shelter — Ankara',
   location: {
     type: 'Point',

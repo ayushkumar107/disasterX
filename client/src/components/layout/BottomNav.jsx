@@ -2,47 +2,67 @@ import React from 'react';
 import { useUIStore } from '../../stores/uiStore';
 import { useAuthStore } from '../../stores/authStore';
 import { useSOSStore } from '../../stores/sosStore';
-import { AlertTriangle, MessageCircle, Bot, FileWarning, Route } from 'lucide-react';
+import { useLocationStore } from '../../stores/locationStore';
+import { 
+  AlertTriangle, 
+  ShieldAlert, 
+  CloudRain, 
+  Cpu, 
+  FileWarning, 
+  ListOrdered,
+  Navigation
+} from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const navItems = [
   {
     id: 'sos',
-    icon: <AlertTriangle size={20} />,
-    label: 'SOS',
+    icon: <AlertTriangle size={18} />,
+    label: 'SOS Beacon',
     danger: true,
     requiresAuth: true,
     action: 'modal'
   },
   {
-    id: 'chat',
-    icon: <MessageCircle size={18} />,
-    label: 'Nearby Chat',
-    panel: 'chat',
-    requiresAuth: true
+    id: 'route',
+    icon: <Navigation size={17} className="text-[#00ff66]" />,
+    label: 'Safe Shelter',
+    danger: false,
+    highlight: true
   },
   {
-    id: 'ai',
-    icon: <Bot size={18} />,
-    label: 'AI Assistant',
-    panel: 'ai'
+    id: 'warnings',
+    icon: <ShieldAlert size={16} />,
+    label: 'Warnings',
+    panel: 'warnings'
+  },
+  {
+    id: 'rainfall',
+    icon: <CloudRain size={16} />,
+    label: 'Rainfall',
+    panel: 'rainfall'
+  },
+  {
+    id: 'sensors',
+    icon: <Cpu size={16} />,
+    label: 'Soil Sensors',
+    panel: 'sensors'
   },
   {
     id: 'report',
-    icon: <FileWarning size={18} />,
-    label: 'Report',
+    icon: <FileWarning size={16} />,
+    label: 'Field Report',
     panel: 'report',
     requiresAuth: true
   },
   {
-    id: 'route',
-    icon: <Route size={18} />,
-    label: 'Safe Route',
-    panel: 'route'
+    id: 'priority',
+    icon: <ListOrdered size={16} />,
+    label: 'Dispatch',
+    panel: 'priority',
+    requiresAuth: true
   }
 ];
-
-import { useLocationStore } from '../../stores/locationStore';
 
 export const BottomNav = () => {
   const { activePanel, setActivePanel } = useUIStore();
@@ -63,8 +83,8 @@ export const BottomNav = () => {
   };
 
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
-      <div className="glass-panel-strong px-2 py-2 flex items-center gap-1">
+    <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-40">
+      <div className="glass-panel-strong border-[#00f0ff]/30 px-2 py-1.5 flex items-center gap-1 shadow-2xl">
         {navItems.map(item => {
           const isActive = item.id === 'route' ? activeRoute !== null : (activePanel === item.panel && item.panel !== undefined);
           const isDisabled = item.requiresAuth && !isAuthenticated;
@@ -76,19 +96,22 @@ export const BottomNav = () => {
               onClick={() => handleClick(item)} 
               disabled={isDisabled} 
               className={`relative flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg
-                  transition-all duration-200 min-w-[60px]
+                  transition-all duration-200 min-w-[62px]
                   ${isDisabled 
                     ? 'opacity-30 cursor-not-allowed' 
                     : item.danger 
                       ? isActive 
                         ? 'bg-[rgba(239,68,68,0.2)] border border-[rgba(239,68,68,0.4)] text-[var(--color-dx-critical)]' 
                         : 'hover:bg-[rgba(239,68,68,0.1)] text-[var(--color-dx-muted)] hover:text-[var(--color-dx-critical)]' 
-                      : isActive 
-                        ? 'bg-[rgba(0,212,255,0.15)] border border-[rgba(0,212,255,0.3)] text-[var(--color-dx-cyan)]' 
-                        : 'hover:bg-[var(--color-dx-surface-hover)] text-[var(--color-dx-muted)] hover:text-[var(--color-dx-white)]'}
+                      : item.highlight && activeRoute
+                        ? 'bg-[#00ff66]/20 border border-[#00ff66]/60 text-[#00ff66] shadow-[0_0_12px_rgba(0,255,102,0.4)]'
+                        : isActive 
+                          ? 'bg-[rgba(0,212,255,0.15)] border border-[rgba(0,212,255,0.3)] text-[var(--color-dx-cyan)]' 
+                          : 'hover:bg-[var(--color-dx-surface-hover)] text-[var(--color-dx-muted)] hover:text-[var(--color-dx-white)]'}
                   ${!isActive && !item.danger ? 'border border-transparent' : ''}`}
             >
               {item.danger && !isDisabled && <span className="absolute -top-1 -right-1 w-2 h-2 bg-[var(--color-dx-critical)] rounded-full animate-blink" />}
+              {item.highlight && activeRoute && <span className="absolute -top-1 -right-1 w-2 h-2 bg-[#00ff66] rounded-full animate-ping" />}
               {item.icon}
               <span className="text-[9px] font-medium tracking-wide">{item.label}</span>
             </motion.button>

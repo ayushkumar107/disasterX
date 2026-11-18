@@ -20,14 +20,12 @@ import {
 } from 'lucide-react';
 
 const QUICK_PROMPTS = [
-  { id: 'cpr', label: '🩺 CPR First Aid', query: 'How to perform CPR first aid on an unconscious victim?' },
-  { id: 'bleeding', label: '🩸 Stop Severe Bleeding', query: 'Step-by-step guide to stop severe arterial bleeding' },
-  { id: 'burn', label: '🩹 Burn Treatment', query: 'First aid treatment for 1st, 2nd, and 3rd degree burns' },
-  { id: 'earthquake', label: '🫨 Earthquake Survival', query: 'What to do during and immediately after an earthquake?' },
-  { id: 'tsunami', label: '🌊 Tsunami Protocol', query: 'Tsunami warning signs and emergency evacuation steps' },
-  { id: 'water', label: '💧 Water Purification', query: 'How to purify contaminated water in an emergency survival situation?' },
-  { id: 'fracture', label: '🦴 Fracture & Sprain', query: 'How to splint a suspected broken bone or severe sprain?' },
-  { id: 'choking', label: '🫁 Heimlich / Choking', query: 'How to perform the Heimlich maneuver on a choking adult or child?' }
+  { id: 'warning_signs', label: '⚠️ Landslide Warning Signs', query: 'What are the early warning signs of an impending landslide?' },
+  { id: 'evac_protocol', label: '🏃 Evacuation Protocol', query: 'What is the safe evacuation protocol during a landslide warning?' },
+  { id: 'slope_stabilization', label: '🌳 Slope Stabilization', query: 'How to stabilize slopes and prevent soil erosion in hilly areas?' },
+  { id: 'drainage_control', label: '💧 Drainage Management', query: 'How does water drainage control help reduce landslide risk?' },
+  { id: 'ner_susceptibility', label: '🗺️ NER Susceptibility', query: 'Which states in the North Eastern Region are most susceptible to landslides?' },
+  { id: 'emergency_kit', label: '🎒 Survival Kit list', query: 'What should be included in a landslide emergency survival kit?' }
 ];
 
 export const AIAssistantPanel = () => {
@@ -43,11 +41,11 @@ export const AIAssistantPanel = () => {
     {
       sender: 'ai',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      text: `Hello! I am your **Disaster-X AI Emergency Advisor**. 
+      text: `Hello! I am your **Disaster-X Landslide Emergency Advisor**. 
 
-I provide real-time **first aid methods, medical protocols, disaster survival steps**, and emergency guidance.
+I provide expert guidance on **landslide warning signs, slope stabilization, evacuation protocols**, and regional vulnerability.
 
-Ask me anything or select a quick topic below:`,
+Ask me anything or select a topic below:`,
       isInitial: true
     }
   ]);
@@ -302,134 +300,93 @@ function renderFormattedMessage(text) {
 function generateAIResponse(prompt) {
   const p = prompt.toLowerCase();
 
-  if (p.includes('cpr')) {
-    return `## 🩺 CPR (Cardiopulmonary Resuscitation) Protocol
+  if (p.includes('warning') || p.includes('sign') || p.includes('indicator')) {
+    return `## ⚠️ Early Warning Signs of Landslides
+    
+🚨 **IMMEDIATE ATTENTION**: Landslides often provide warning signs before failure. Monitor closely!
 
-🚨 **IMMEDIATE ACTION**: Call Emergency Services (911 / 112) immediately!
+### Primary Geological Indicators:
+1. **New Cracks or Bulges**: Appearing in ground, road pavements, retaining walls, or hillslope soils.
+2. **Tilted Structures**: Trees, utility poles, or fences tilting progressively over hours/days.
+3. **Stuck Doors/Windows**: House doors or windows sticking or jamming, indicating foundation shifting.
+4. **Water Accumulation**: Sudden water seepage or new springs appearing on slopes, or clean creek water turning muddy.
+5. **Soil Movement**: Small soil slides, shifting rocks, or minor ground subsidence.
+6. **Sudden Sounds**: Rumbling, cracking wood, or boulders knocking together, indicating movement.
 
-### Step-by-Step CPR Method:
-1. **Check Responsiveness**: Tap shoulders & shout "Are you okay?".
-2. **Check Breathing**: Watch chest for 5-10 seconds.
-3. **Hand Placement**: Place heel of one hand in center of chest (lower half of sternum), interlock fingers of second hand.
-4. **Chest Compressions**:
-   - Push hard & fast (100-120 compressions/min).
-   - Push at least **2 inches (5 cm)** deep.
-   - Allow complete chest recoil between pushes.
-5. **Rescue Breaths** (If trained): Give 2 breaths after every 30 compressions.
-
-📌 *Beat Rhythm*: Push to the beat of "Stayin' Alive". Continue until medical help arrives.`;
+📌 *Action*: If you observe multiple signs during heavy rain, evacuate the area immediately.`;
   }
 
-  if (p.includes('bleed') || p.includes('blood') || p.includes('cut')) {
-    return `## 🩸 Severe Bleeding Control & First Aid
+  if (p.includes('evac') || p.includes('protocol') || p.includes('safe')) {
+    return `## 🏃 Landslide Evacuation Protocol
+    
+⚠️ **CRITICAL**: Landslides move rapidly. Evacuate early; do not wait!
 
-⚠️ **CRITICAL**: Act fast to prevent hemorrhagic shock.
+### Emergency Evacuation Protocol:
+1. **Stay Alert**: Listen for local alerts or warnings via DISASTER-X NER or local radio/television.
+2. **Move to High Ground**: Travel away from steep slopes, ravines, and valley floors.
+3. **Avoid Stream Channels**: Never seek shelter in low-lying river valleys or drainage paths.
+4. **Protect Yourself**: If you cannot escape, curl into a tight ball and protect your head and neck.
+5. **Check Infrastructure**: Do not drive on mountain roads showing pavement cracking or debris.
 
-### Emergency Control Steps:
-1. **Apply Direct Pressure**: Place clean cloth, sterile gauze, or gloved hand directly over wound. Push HARD.
-2. **Elevate Wound**: Raise injured limb above heart level if no fracture suspected.
-3. **Apply Pressure Bandage**: Wrap firmly with bandage. Do NOT remove original soaked gauze; layer more on top.
-4. **Tourniquet Application** (For life-threatening arm/leg bleeding):
-   - Place 2-3 inches above wound (never over a joint).
-   - Tighten until bleeding stops completely.
-   - Note exact time applied on patient's forehead (e.g. "T 14:30").
-
-🚨 **NEVER** remove embedded objects. Stabilize object with padding instead!`;
+🚨 **NEVER** return to a landslide area until geologists and emergency authorities officially declare it safe.`;
   }
 
-  if (p.includes('burn')) {
-    return `## 🩹 First Aid for Thermal & Chemical Burns
-
-### 1st & 2nd Degree Burns (Redness / Blisters):
-1. **Cool Immediately**: Run cool (NOT ice cold) tap water over burn for **10 to 20 minutes**.
-2. **Remove Jewelry/Tight Clothing**: Before swelling begins.
-3. **Cover Loose**: Apply clean, sterile, non-stick bandage or clean plastic wrap.
-4. **Do NOT Pop Blisters**: Leaves wound vulnerable to infection.
-
-### 3rd Degree Burns (Charred / White / Numb):
-🚨 **Call Emergency Medical Services Immediately!**
-- Do NOT apply water or ointments.
-- Cover loosely with sterile dry dressing.
-- Monitor breathing & treat for shock.`;
+  if (p.includes('stabil') || p.includes('prevent') || p.includes('erosion')) {
+    return `## 🌳 Slope Stabilization & Mitigation Methods
+    
+### Effective Landslide Mitigation Techniques:
+1. **Vegetative Cover (Bio-engineering)**: Plant deep-rooting trees (like Vetiver grass, bamboo, native pines) to bind soil particles.
+2. **Retaining Structures**: Build gabion walls (rock-filled wire cages) or reinforced concrete retaining structures at the base.
+3. **Geotextiles**: Install synthetic geotextile mats over bare slopes to control erosion while vegetation grows.
+4. **Terracing**: Grade steep slopes into step-like terraces to reduce downhill soil momentum.
+5. **Drainage Controls**: Install sub-surface pipes and lined surface drains to route water safely off slopes.`;
   }
 
-  if (p.includes('earthquake')) {
-    return `## 🫨 Earthquake Emergency Survival Protocol
+  if (p.includes('drain') || p.includes('water') || p.includes('run')) {
+    return `## 💧 Drainage Management & Slope Stability
+    
+### Why Drainage Controls are Critical:
+- **Pore Water Pressure**: Rainwater saturates soil, increasing pore pressure and reducing friction/shear strength.
+- **Weight Addition**: Saturated soil is significantly heavier, increasing the gravitational force pulling the slope down.
 
-### INDOORS: **DROP, COVER, HOLD ON**
-1. **DROP**: Get down onto hands and knees.
-2. **COVER**: Take cover under sturdy table or desk. Protect head & neck with arms.
-3. **HOLD ON**: Hold on until shaking stops completely.
-
-### IF OUTDOORS:
-- Move to open area away from buildings, streetlights, utility wires, and trees.
-
-### AFTER SHAKING STOPS:
-- Check for gas leaks (do NOT light matches).
-- Expect aftershocks.
-- Follow evacuation routes to open safe zones or shelters.`;
+### Key Drainage Maintenance Actions:
+1. **Clear Surface Drains**: Ensure hillside channels are clear of debris, leaves, and rocks before monsoon seasons.
+2. **Construct Lined Channels**: Line soil drains with concrete to prevent water from soaking directly into the slope.
+3. **Sub-surface Drainage**: Install perforated pipes to drain deep groundwater tables.`;
   }
 
-  if (p.includes('tsunami')) {
-    return `## 🌊 Tsunami Warning & Evacuation Steps
-
-🚨 **NATURAL WARNING SIGNS**:
-- Strong earthquake felt near coast.
-- Rapid sea level rise or sudden retreat (ocean disappearing).
-- Roaring ocean noise like a train.
-
-### EMERGENCY STEPS:
-1. **Move Inland & Uphill Immediately**: Reach at least 100 feet (30m) above sea level or 2 miles (3km) inland.
-2. **Do NOT Wait for Official Warning**: If you feel strong shaking near coast, RUN to high ground.
-3. **Stay Away from Coast**: Waves come in a series over hours. First wave is rarely the largest.`;
+  if (p.includes('ner') || p.includes('suscept') || p.includes('region')) {
+    return `## 🗺️ Landslide Susceptibility in Northeast India (NER)
+    
+### High Susceptibility Zones:
+1. **Sikkim (East & North)**: High altitude metamorphic slopes; highly prone during monsoon and seismic events.
+2. **Meghalaya (Sohra Escarpment)**: Prone due to receiving some of the world's highest rainfall intensities on steep sandstone ridges.
+3. **Arunachal Pradesh (Papum Pare/Tawang)**: Steep slopes with younger, unstable sedimentary rock formations.
+4. **Assam (Dima Hasao/Karbi Anglong)**: Prone to massive mudslides blocking key railway and national highway lines.
+5. **Mizoram (Aizawl Hills)**: Urban landslides triggered by poor drainage on steep residential hill slopes.`;
   }
 
-  if (p.includes('water') || p.includes('purif')) {
-    return `## 💧 Emergency Water Purification Methods
-
-### Method 1: Boiling (Most Reliable)
-- Bring water to a **rolling boil for at least 1 full minute** (3 minutes at high altitude).
-- Kills all bacteria, viruses, and parasites.
-
-### Method 2: Unscented Household Bleach
-- Add **2 drops of regular liquid bleach** per 1 liter (1 quart) of clear water.
-- Stir & let stand for **30 minutes**. Water should have faint chlorine odor.
-
-### Method 3: SODIS (Solar Disinfection)
-- Fill clear plastic bottles with clear water & place in direct sunlight for 6 hours.`;
+  if (p.includes('kit') || p.includes('surv') || p.includes('bag')) {
+    return `## 🎒 Emergency Landslide Survival Kit
+    
+### Essential Items Checklist:
+- **Water**: 3 liters per person per day (for at least 3 days).
+- **First Aid**: Bandages, antiseptic, personal medications, splints.
+- **Tools**: Waterproof flashlight, whistle, multi-tool knife, matches/lighter.
+- **Documents**: ID copies, land titles, emergency numbers.
+- **Rations**: High-calorie, non-perishable canned food or energy bars.
+- **Warmth**: Space blankets, raincoats, sturdy boots.`;
   }
 
-  if (p.includes('fracture') || p.includes('bone') || p.includes('sprain')) {
-    return `## 🦴 Fracture & Severe Joint Injury First Aid
+  // Fallback
+  return `## 🤖 Landslide AI Emergency Advisor
+  
+### Query: "${prompt}"
 
-### Emergency Care Rules:
-1. **Immobilize the Area**: Do NOT attempt to straighten or push bone back in!
-2. **Improvise a Splint**: Use rigid material (cardboard, wood, folded newspaper) secured with cloth/tape above and below joint.
-3. **Apply Ice**: Wrap ice pack in towel and apply for 15-20 minutes to reduce swelling.
-4. **Check Circulation**: Ensure fingers/toes beyond splint are warm and not turning blue.`;
-  }
+1. **Assess Immediate Threat**: Ensure your personal safety. Evacuate if adjacent to a steep slope during extreme rain.
+2. **Check Sensors**: Review live **Soil Moisture** and **Rainfall Telemetry** on your DISASTER-X dashboard.
+3. **Follow Safe Routes**: Use the Map display to trace escape routes to the nearest designated emergency shelter.
+4. **Call Emergency Dispatch**: Dial 112 / 108 for immediate rescue assistance.
 
-  if (p.includes('chok') || p.includes('heimlich')) {
-    return `## 🫁 Heimlich Maneuver for Choking
-
-### Conscious Adult / Child (>1 year):
-1. Stand behind victim, wrap arms around waist.
-2. Make a fist with one hand, place thumb side above belly button (below ribcage).
-3. Grasp fist with other hand & perform **quick, hard, inward and upward thrusts**.
-4. Repeat thrusts until object is dislodged or person becomes unconscious.
-
-🚨 **If Unconscious**: Lower to floor, call 911, begin CPR compressions & check mouth before breaths.`;
-  }
-
-  // General Emergency AI Advisor Fallback
-  return `## 🤖 AI Emergency Advisory Response
-
-### Guidance for: "${prompt}"
-
-1. **Assess Immediate Threat**: Ensure your personal safety before assisting others (Scene Safety).
-2. **Call Emergency Responders**: Dial emergency dispatch (911 / 112 / 999) if life or safety is threatened.
-3. **Check Vital Signs**: Verify consciousness, airway, breathing, and pulse.
-4. **Follow Disaster-X Protocols**: Locate nearest shelter on your live map using **Safe Route**.
-
-📌 *Need specific instructions? Try asking about CPR, Bleeding, Burns, Earthquakes, Tsunamis, or Water Purification!*`;
+📌 *Try asking about Landslide Warning Signs, Evacuation Protocols, Slope Stabilization, or Survival Kits!*`;
 }

@@ -9,7 +9,7 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
 const generalLimiter = exports.generalLimiter = (0, _expressRateLimit.default)({
   windowMs: 15 * 60 * 1000,
   // 15 minutes
-  max: 100,
+  max: process.env.NODE_ENV === 'development' ? 10000 : 200,
   message: {
     error: 'Too many requests, please try again later'
   },

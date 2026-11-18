@@ -15,6 +15,8 @@ router.get('/', (req, res, next) => _disasterController.disasterController.getDi
 router.get('/stats', (req, res, next) => _disasterController.disasterController.getStats(req, res, next));
 router.get('/nearby', _auth.authenticate, (req, res, next) => _disasterController.disasterController.getNearbyDisasters(req, res, next));
 router.get('/:id', (req, res, next) => _disasterController.disasterController.getDisasterById(req, res, next));
+router.post('/reports', _auth.authenticate, (req, res, next) => _disasterController.disasterController.createReport(req, res, next));
+router.get('/reports', (req, res, next) => _disasterController.disasterController.getReports(req, res, next));
 router.post('/', _auth.authenticate, (0, _rbac.requireRole)('ADMIN'), (0, _validate.validate)(_disasterValidators.createDisasterSchema), (req, res, next) => _disasterController.disasterController.createDisaster(req, res, next));
 router.patch('/:id', _auth.authenticate, (0, _rbac.requireRole)('ADMIN'), (req, res, next) => _disasterController.disasterController.updateDisaster(req, res, next));
 var _default = exports.default = router;

@@ -14,7 +14,7 @@ const notificationSchema = new _mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['DISASTER_NEARBY', 'SOS_ACKNOWLEDGED', 'TEAM_ASSIGNED', 'NEW_REPORT', 'ROUTE_HAZARD', 'SHELTER_WARNING', 'SYSTEM'],
+    enum: ['DISASTER_NEARBY', 'SOS_ACKNOWLEDGED', 'TEAM_ASSIGNED', 'NEW_REPORT', 'ROUTE_HAZARD', 'SHELTER_WARNING', 'SYSTEM', 'LANDSLIDE_WARNING', 'RISK_ZONE_ALERT', 'SENSOR_ALERT', 'ROAD_RISK', 'EARLY_WARNING'],
     required: true
   },
   title: {

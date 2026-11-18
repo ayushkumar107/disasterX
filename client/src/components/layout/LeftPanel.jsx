@@ -5,7 +5,11 @@ import { useDisasterStore } from '../../stores/disasterStore';
 import { useMapStore } from '../../stores/mapStore';
 import { useWeatherStore } from '../../stores/weatherStore';
 import { DISASTER_TYPE_CONFIG, SEVERITY_CONFIG } from '../../types/disaster';
-import { Layers, Filter, Eye, EyeOff, MapPin, Shield, CloudRain, Home, Radio, Users } from 'lucide-react';
+import { Layers, Filter, Eye, EyeOff, MapPin, Shield, CloudRain, Home, Radio, Users, Cpu, Route } from 'lucide-react';
+import { useLocationStore } from '../../stores/locationStore';
+import { useLandslideStore } from '../../stores/landslideStore';
+import { useWarningStore } from '../../stores/warningStore';
+
 export const LeftPanel = () => {
   const leftPanelOpen = useUIStore(s => s.leftPanelOpen);
   const {
@@ -18,12 +22,36 @@ export const LeftPanel = () => {
     toggleLayer
   } = useMapStore();
   const disasters = useDisasterStore(s => s.disasters);
-  const activeCount = disasters.filter(d => d.status === 'ACTIVE').length;
+  const zones = useLandslideStore(s => s.zones);
+  const warnings = useWarningStore(s => s.warnings);
+  
+  const activeCount = warnings.filter(w => w.status === 'ACTIVE').length;
+  
   const layers = [{
     key: 'disasters',
     icon: <Radio size={14} />,
     label: 'Disasters',
-    color: 'var(--color-dx-critical)'
+    color: 'var(--color-dx-red)'
+  }, {
+    key: 'landslideRiskZones',
+    icon: <Shield size={14} />,
+    label: 'Landslide Risk Zones',
+    color: 'var(--color-dx-orange)'
+  }, {
+    key: 'rainfallObservations',
+    icon: <CloudRain size={14} />,
+    label: 'Rainfall Analytics',
+    color: 'var(--color-dx-cyan)'
+  }, {
+    key: 'soilSensors',
+    icon: <Cpu size={14} />,
+    label: 'Soil IoT Sensors',
+    color: 'var(--color-dx-yellow)'
+  }, {
+    key: 'roadRisks',
+    icon: <Route size={14} />,
+    label: 'Highway Risk Segments',
+    color: 'var(--color-dx-red)'
   }, {
     key: 'shelters',
     icon: <Home size={14} />,
@@ -33,22 +61,17 @@ export const LeftPanel = () => {
     key: 'sos',
     icon: <Shield size={14} />,
     label: 'SOS Alerts',
-    color: 'var(--color-dx-high)'
+    color: 'var(--color-dx-orange)'
   }, {
     key: 'rescueTeams',
     icon: <Users size={14} />,
     label: 'Rescue Teams',
     color: 'var(--color-dx-blue)'
   }, {
-    key: 'weather',
-    icon: <CloudRain size={14} />,
-    label: 'Weather',
-    color: 'var(--color-dx-cyan)'
-  }, {
     key: 'userLocation',
     icon: <MapPin size={14} />,
     label: 'My Location',
-    color: 'var(--color-dx-teal)'
+    color: 'var(--color-dx-green)'
   }];
   const toggleWeatherPanel = useWeatherStore((s) => s.togglePanel);
   const flyTo = useMapStore((s) => s.flyTo);
@@ -59,7 +82,7 @@ export const LeftPanel = () => {
       toggleWeatherPanel();
     }
     if (key === 'userLocation') {
-      const userLoc = useLocationStore.getState().userLocation || [80.94, 26.84];
+      const userLoc = useLocationStore.getState().userLocation || [92.73, 25.17];
       flyTo(userLoc[0], userLoc[1], 14);
     }
   };
@@ -78,23 +101,23 @@ export const LeftPanel = () => {
       type: 'spring',
       damping: 25,
       stiffness: 300
-    }} className="fixed left-3 top-14 bottom-20 z-40 w-[280px] overflow-y-auto
-            glass-panel-strong p-4 flex flex-col gap-4">
+    }} className="fixed left-16 top-16 bottom-12 z-40 w-[280px] overflow-y-auto
+            glass-panel-strong border-[#e5b849]/30 p-4 flex flex-col gap-4">
           {/* Global Status */}
           <div>
             <div className="flex items-center gap-2 mb-3">
               <Radio size={14} className="text-[var(--color-dx-cyan)]" />
-              <span className="telemetry-label">GLOBAL STATUS</span>
+              <span className="telemetry-label">NER LANDSLIDE STATUS</span>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="bg-[var(--color-dx-bg)] rounded-lg p-2.5 border border-[var(--color-dx-border)]">
-                <div className="telemetry-label mb-1">Active Events</div>
-                <div className="font-mono text-lg text-[var(--color-dx-cyan)]">{activeCount}</div>
+                <div className="telemetry-label mb-1">Active Warnings</div>
+                <div className="font-mono text-lg text-[var(--color-dx-red)]">{activeCount}</div>
               </div>
               <div className="bg-[var(--color-dx-bg)] rounded-lg p-2.5 border border-[var(--color-dx-border)]">
-                <div className="telemetry-label mb-1">Monitoring</div>
-                <div className="font-mono text-lg text-[var(--color-dx-medium)]">
-                  {disasters.filter(d => d.status === 'MONITORING').length}
+                <div className="telemetry-label mb-1">Monitoring Zones</div>
+                <div className="font-mono text-lg text-[var(--color-dx-cyan)]">
+                  {zones.length}
                 </div>
               </div>
             </div>
