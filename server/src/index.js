@@ -11,6 +11,7 @@ var _IngestionService = require("./services/IngestionService");
 var _socketio = require("./config/socketio");
 var _seedNER = require("./seeds/seedNER");
 var _chatController = require("./controllers/chatController");
+var _Shelter = require("./models/Shelter");
 var _fs = _interopRequireDefault(require("fs"));
 var _path = _interopRequireDefault(require("path"));
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
@@ -34,12 +35,15 @@ const startServer = async () => {
   // Seed default community chat rooms
   await (0, _chatController.seedDefaultRooms)();
 
-  // Seed database and run initial ingestion in development
-  if (_env.env.NODE_ENV === 'development') {
+  // Seed database and run initial ingestion (runs in dev or on fresh cloud databases)
+  const existingShelters = await _Shelter.Shelter.countDocuments();
+  if (_env.env.NODE_ENV === 'development' || existingShelters === 0) {
+    _logger.logger.info('Initializing default seeds & shelters (fresh DB detected or dev mode)...');
     await (0, _seed.seedDatabase)();
     await (0, _seedNER.seedNERData)();
-    // Run an initial ingestion immediately for testing
-    _IngestionService.ingestionService.runIngestion().catch(e => _logger.logger.error('Initial ingestion failed', e));
+    if (_env.env.NODE_ENV === 'development') {
+      _IngestionService.ingestionService.runIngestion().catch(e => _logger.logger.error('Initial ingestion failed', e));
+    }
   }
 
   // Create HTTP server
