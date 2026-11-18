@@ -5,13 +5,14 @@ import { useDisasterStore } from '../../stores/disasterStore';
 import { useMapStore } from '../../stores/mapStore';
 import { useWeatherStore } from '../../stores/weatherStore';
 import { DISASTER_TYPE_CONFIG, SEVERITY_CONFIG } from '../../types/disaster';
-import { Layers, Filter, Eye, EyeOff, MapPin, Shield, CloudRain, Home, Radio, Users, Cpu, Route } from 'lucide-react';
+import { Layers, Filter, Eye, EyeOff, MapPin, Shield, CloudRain, Home, Radio, Users, Cpu, Route, X } from 'lucide-react';
 import { useLocationStore } from '../../stores/locationStore';
 import { useLandslideStore } from '../../stores/landslideStore';
 import { useWarningStore } from '../../stores/warningStore';
 
 export const LeftPanel = () => {
   const leftPanelOpen = useUIStore(s => s.leftPanelOpen);
+  const toggleLeftPanel = useUIStore(s => s.toggleLeftPanel);
   const {
     filters,
     toggleTypeFilter,
@@ -101,13 +102,22 @@ export const LeftPanel = () => {
       type: 'spring',
       damping: 25,
       stiffness: 300
-    }} className="fixed left-16 top-16 bottom-12 z-40 w-[280px] overflow-y-auto
-            glass-panel-strong border-[#e5b849]/30 p-4 flex flex-col gap-4">
+    }} className="fixed left-2 sm:left-16 top-14 sm:top-16 bottom-16 sm:bottom-12 z-40 w-[calc(100vw-1rem)] sm:w-[280px] max-w-sm overflow-y-auto
+            glass-panel-strong border-[#e5b849]/30 p-3 sm:p-4 flex flex-col gap-4">
           {/* Global Status */}
           <div>
-            <div className="flex items-center gap-2 mb-3">
-              <Radio size={14} className="text-[var(--color-dx-cyan)]" />
-              <span className="telemetry-label">NER LANDSLIDE STATUS</span>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Radio size={14} className="text-[var(--color-dx-cyan)]" />
+                <span className="telemetry-label">NER LANDSLIDE STATUS</span>
+              </div>
+              <button
+                onClick={toggleLeftPanel}
+                className="sm:hidden p-1 rounded hover:bg-white/10 text-gray-400 hover:text-white"
+                title="Close Drawer"
+              >
+                <X size={16} />
+              </button>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="bg-[var(--color-dx-bg)] rounded-lg p-2.5 border border-[var(--color-dx-border)]">

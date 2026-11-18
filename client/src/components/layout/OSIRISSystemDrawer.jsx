@@ -55,7 +55,7 @@ export const OSIRISSystemDrawer = () => {
         initial={{ x: -400, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         exit={{ x: -400, opacity: 0 }}
-        className="fixed left-16 top-16 bottom-12 z-40 w-[360px] rounded-2xl bg-[#050a14]/95 backdrop-blur-xl border border-[#e5b849]/40 p-4 shadow-[0_0_40px_rgba(0,0,0,0.8)] font-mono flex flex-col gap-3"
+        className="fixed left-2 sm:left-16 top-14 sm:top-16 bottom-16 sm:bottom-12 z-40 w-[calc(100vw-1rem)] sm:w-[360px] max-w-sm rounded-2xl bg-[#050a14]/95 backdrop-blur-xl border border-[#e5b849]/40 p-3 sm:p-4 shadow-[0_0_40px_rgba(0,0,0,0.8)] font-mono flex flex-col gap-3"
       >
         {/* Drawer Header */}
         <div className="flex items-center justify-between border-b border-white/10 pb-3">

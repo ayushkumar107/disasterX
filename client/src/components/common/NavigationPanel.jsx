@@ -54,7 +54,7 @@ export const NavigationPanel = () => {
         initial={{ opacity: 0, y: -20, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: -20, scale: 0.95 }}
-        className="fixed top-16 right-4 z-40 w-80 md:w-96 glass-panel-strong border border-[var(--color-dx-cyan)]/30 rounded-xl shadow-2xl overflow-hidden backdrop-blur-md"
+        className="fixed top-14 sm:top-16 left-2 sm:left-auto right-2 sm:right-4 z-40 w-auto sm:w-80 md:w-96 max-h-[85vh] flex flex-col glass-panel-strong border border-[var(--color-dx-cyan)]/30 rounded-xl shadow-2xl overflow-hidden backdrop-blur-md"
       >
         {/* Header Bar */}
         <div className="bg-[rgba(0,240,255,0.08)] px-4 py-3 border-b border-[rgba(0,240,255,0.15)] flex items-center justify-between">

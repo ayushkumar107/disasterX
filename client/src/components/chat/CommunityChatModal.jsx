@@ -59,6 +59,7 @@ export const CommunityChatModal = () => {
   const [senderRole, setSenderRole] = useState(user?.role === 'ADMIN' ? 'OFFICIAL' : user?.role === 'RESCUE_TEAM' ? 'RESPONDER' : 'CITIZEN');
   const [includeLocation, setIncludeLocation] = useState(false);
   const [isBroadcast, setIsBroadcast] = useState(false);
+  const [showChannelsMobile, setShowChannelsMobile] = useState(false);
 
   const messagesEndRef = useRef(null);
 
@@ -115,26 +116,26 @@ export const CommunityChatModal = () => {
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md"
+        className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-6 bg-black/80 backdrop-blur-md"
       >
-        <div className="w-full max-w-4xl h-[85vh] max-h-[750px] rounded-2xl bg-[#050a14] border border-[#00f0ff]/40 shadow-[0_0_50px_rgba(0,240,255,0.25)] font-mono flex flex-col overflow-hidden">
+        <div className="w-full max-w-4xl h-[92vh] sm:h-[85vh] max-h-[800px] rounded-2xl bg-[#050a14] border border-[#00f0ff]/40 shadow-[0_0_50px_rgba(0,240,255,0.25)] font-mono flex flex-col overflow-hidden relative">
           
           {/* Top Modal Header */}
-          <div className="flex items-center justify-between px-4 py-3 bg-[#03060a] border-b border-white/10 shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded bg-[#070e18] border border-[#00f0ff]/50 flex items-center justify-center text-[#00f0ff] glow-cyan-sm">
-                <MessageSquare size={18} className="animate-pulse" />
+          <div className="flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 bg-[#03060a] border-b border-white/10 shrink-0">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded bg-[#070e18] border border-[#00f0ff]/50 flex items-center justify-center text-[#00f0ff] glow-cyan-sm shrink-0">
+                <MessageSquare size={16} className="animate-pulse" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-white tracking-wider font-osiris">
-                    DISASTERLINK • EMERGENCY & COMMUNITY CHAT
+                  <span className="text-xs sm:text-sm font-bold text-white tracking-wider font-osiris truncate">
+                    DISASTERLINK • CHAT
                   </span>
-                  <span className="px-2 py-0.5 text-[9px] font-bold rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                  <span className="px-1.5 py-0.5 text-[8px] sm:text-[9px] font-bold rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shrink-0">
                     REAL-TIME
                   </span>
                 </div>
-                <span className="text-[10px] text-[#94a3b8]">
+                <span className="text-[10px] text-[#94a3b8] hidden sm:block truncate">
                   COORDINATED FIELD DISPATCH, CITIZEN ASSISTANCE & RESCUE MESSAGING
                 </span>
               </div>
@@ -142,28 +143,36 @@ export const CommunityChatModal = () => {
 
             <button
               onClick={() => setOpen(false)}
-              className="p-1.5 rounded text-[#64748b] hover:text-[#00f0ff] hover:bg-white/10 transition-colors"
+              className="p-1.5 rounded text-[#64748b] hover:text-[#00f0ff] hover:bg-white/10 transition-colors shrink-0"
             >
               <X size={20} />
             </button>
           </div>
 
           {/* Main Area: Channel List + Message Thread */}
-          <div className="flex-1 flex overflow-hidden">
+          <div className="flex-1 flex overflow-hidden relative">
             
             {/* Left Channel Sidebar */}
-            <div className="w-64 border-r border-white/10 bg-[#030712]/90 flex flex-col shrink-0">
+            <div className={`${showChannelsMobile ? 'flex absolute inset-0 z-30 w-full bg-[#030712]' : 'hidden md:flex w-64'} border-r border-white/10 bg-[#030712]/95 flex flex-col shrink-0 transition-all`}>
               <div className="p-2.5 border-b border-white/10 flex items-center justify-between text-xs text-[#94a3b8]">
                 <span className="font-bold uppercase tracking-wider text-[10px] text-[#00f0ff]">
-                  Channels
+                  Radio Channels
                 </span>
-                <button
-                  onClick={() => fetchRooms()}
-                  title="Refresh Channels"
-                  className="hover:text-white transition-colors"
-                >
-                  <RefreshCw size={13} className={isLoadingRooms ? 'animate-spin' : ''} />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => fetchRooms()}
+                    title="Refresh Channels"
+                    className="hover:text-white transition-colors"
+                  >
+                    <RefreshCw size={13} className={isLoadingRooms ? 'animate-spin' : ''} />
+                  </button>
+                  <button
+                    onClick={() => setShowChannelsMobile(false)}
+                    className="md:hidden text-gray-400 hover:text-white p-1"
+                  >
+                    <X size={15} />
+                  </button>
+                </div>
               </div>
 
               <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
@@ -172,7 +181,10 @@ export const CommunityChatModal = () => {
                   return (
                     <button
                       key={room._id}
-                      onClick={() => selectRoom(room)}
+                      onClick={() => {
+                        selectRoom(room);
+                        setShowChannelsMobile(false);
+                      }}
                       className={`w-full text-left p-2 rounded-lg border transition-all text-xs flex items-start gap-2.5 ${
                         isSelected
                           ? 'bg-[#00f0ff]/15 border-[#00f0ff] text-white shadow-[0_0_12px_rgba(0,240,255,0.2)]'
@@ -231,21 +243,32 @@ export const CommunityChatModal = () => {
             <div className="flex-1 flex flex-col bg-[#050a14]/95">
               
               {/* Channel Header Banner */}
-              <div className="px-4 py-2.5 border-b border-white/10 bg-[#070e18] flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                  <Hash size={16} className="text-[#00f0ff]" />
-                  <span className="font-bold text-white text-sm">
-                    {activeRoom?.name || 'Channel'}
-                  </span>
-                  <span className="text-[10px] text-[#94a3b8] hidden sm:inline">
-                    — {activeRoom?.description}
-                  </span>
+              <div className="px-3 sm:px-4 py-2 sm:py-2.5 border-b border-white/10 bg-[#070e18] flex items-center justify-between text-xs gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <button
+                    onClick={() => setShowChannelsMobile(true)}
+                    className="md:hidden px-2 py-1 rounded bg-white/10 text-[#00f0ff] border border-[#00f0ff]/30 text-[10px] flex items-center gap-1 shrink-0"
+                    title="Switch Channel"
+                  >
+                    <Hash size={12} />
+                    <span className="font-bold">CHANNELS</span>
+                  </button>
+
+                  <div className="flex items-center gap-1.5 min-w-0 truncate">
+                    <span className="font-bold text-white text-xs sm:text-sm truncate">
+                      #{activeRoom?.slug || activeRoom?.name || 'general'}
+                    </span>
+                    <span className="text-[10px] text-[#94a3b8] hidden sm:inline truncate">
+                      — {activeRoom?.description}
+                    </span>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-3 text-[10px] text-[#64748b]">
+                <div className="flex items-center gap-2 text-[10px] text-[#64748b] shrink-0">
                   <span className="flex items-center gap-1 text-emerald-400">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    <span>ENCRYPTED & SYNCED</span>
+                    <span className="hidden sm:inline">ENCRYPTED & SYNCED</span>
+                    <span className="sm:hidden text-[9px]">LIVE</span>
                   </span>
                 </div>
               </div>

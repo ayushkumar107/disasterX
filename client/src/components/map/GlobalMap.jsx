@@ -1037,8 +1037,8 @@ export const GlobalMap = () => {
       </svg>
 
       {/* Tactical Bottom Left Map Overlay Bar */}
-      <div className="absolute bottom-12 left-16 z-30 flex flex-col gap-2 font-mono select-none">
-        <div className="flex items-center gap-1.5 p-1 rounded-lg bg-[#050a14]/90 backdrop-blur-md border border-[#e5b849]/30 shadow-2xl">
+      <div className="absolute bottom-24 sm:bottom-12 left-2 sm:left-16 z-30 flex flex-col gap-2 font-mono select-none">
+        <div className="flex items-center gap-1 sm:gap-1.5 p-1 rounded-lg bg-[#050a14]/90 backdrop-blur-md border border-[#e5b849]/30 shadow-2xl">
           <button
             onClick={() => {
               setProjectionMode('3D');
@@ -1046,7 +1046,7 @@ export const GlobalMap = () => {
                 mapRef.current.easeTo({ pitch: 45, bearing: -15 });
               }
             }}
-            className={`osiris-pill flex items-center gap-1 ${projectionMode === '3D' ? 'active' : ''}`}
+            className={`osiris-pill flex items-center gap-1 text-[9px] sm:text-xs px-1.5 sm:px-2.5 py-1 ${projectionMode === '3D' ? 'active' : ''}`}
           >
             <span>🌐 3D</span>
           </button>
@@ -1058,7 +1058,7 @@ export const GlobalMap = () => {
                 mapRef.current.easeTo({ pitch: 0, bearing: 0 });
               }
             }}
-            className={`osiris-pill flex items-center gap-1 ${projectionMode === '2D' ? 'active' : ''}`}
+            className={`osiris-pill flex items-center gap-1 text-[9px] sm:text-xs px-1.5 sm:px-2.5 py-1 ${projectionMode === '2D' ? 'active' : ''}`}
           >
             <span>👥 2D</span>
           </button>
@@ -1067,21 +1067,21 @@ export const GlobalMap = () => {
 
           <button
             onClick={() => setTileMode('MAP')}
-            className={`osiris-pill flex items-center gap-1 ${tileMode === 'MAP' ? 'active' : ''}`}
+            className={`osiris-pill flex items-center gap-1 text-[9px] sm:text-xs px-1.5 sm:px-2.5 py-1 ${tileMode === 'MAP' ? 'active' : ''}`}
           >
             <span>🌙 MAP</span>
           </button>
 
           <button
             onClick={() => setTileMode('SAT')}
-            className={`osiris-pill flex items-center gap-1 ${tileMode === 'SAT' ? 'active' : ''}`}
+            className={`osiris-pill flex items-center gap-1 text-[9px] sm:text-xs px-1.5 sm:px-2.5 py-1 ${tileMode === 'SAT' ? 'active' : ''}`}
           >
             <span>📡 SAT</span>
           </button>
         </div>
 
         {/* Live Cursor Telemetry readout */}
-        <div className="px-3 py-1 rounded-md bg-[#03060a]/90 border border-[#00f0ff]/20 text-[10px] text-[#94a3b8] flex items-center gap-3 backdrop-blur-md shadow-xl">
+        <div className="hidden sm:flex px-3 py-1 rounded-md bg-[#03060a]/90 border border-[#00f0ff]/20 text-[10px] text-[#94a3b8] items-center gap-3 backdrop-blur-md shadow-xl">
           <div>
             <span className="text-[#64748b]">CURSOR</span>{' '}
             <span className="text-[#00f0ff] font-bold">{cursorPos.lat}, {cursorPos.lng}</span>

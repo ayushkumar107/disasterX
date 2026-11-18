@@ -60,8 +60,8 @@ export const TopBar = () => {
     <header className="fixed top-0 left-0 right-0 z-50 h-14 px-3 flex items-center justify-between
       bg-[#03060a]/90 backdrop-blur-md border-b border-[#00f0ff]/20 shadow-2xl">
       
-      {/* Left Branding: Eye logo & Title */}
-      <div className="flex items-center gap-3">
+      {/* Left Branding: Logo & Title */}
+      <div className="flex items-center gap-2 sm:gap-3">
         <button
           onClick={toggleLeftPanel}
           className="p-1.5 rounded text-[#94a3b8] hover:text-[#00f0ff] hover:bg-white/5 transition-colors"
@@ -70,23 +70,23 @@ export const TopBar = () => {
           {leftPanelOpen ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
         </button>
 
-        <div className="flex items-center gap-2.5 group cursor-pointer" onClick={() => navigate('/')}>
+        <div className="flex items-center gap-2 sm:gap-2.5 group cursor-pointer" onClick={() => navigate('/')}>
           {/* Tactical Logo Icon */}
-          <div className="relative w-8 h-8 flex items-center justify-center rounded bg-[#070e18] border border-[#00f0ff]/50 shadow-[0_0_12px_rgba(0,240,255,0.3)]">
-            <Globe size={18} className="text-[#00f0ff] animate-pulse" />
+          <div className="relative w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded bg-[#070e18] border border-[#00f0ff]/50 shadow-[0_0_12px_rgba(0,240,255,0.3)]">
+            <Globe size={16} className="text-[#00f0ff] animate-pulse sm:w-[18px] sm:h-[18px]" />
             <div className="absolute inset-0 rounded border border-[#00f0ff]/20 scale-110 animate-ping opacity-25" />
           </div>
 
           <div className="flex flex-col leading-tight">
-            <div className="flex items-center gap-2">
-              <span className="font-osiris font-black text-base text-[#00f0ff] tracking-[0.2em] drop-shadow-[0_0_8px_rgba(0,240,255,0.5)]">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="font-osiris font-black text-sm sm:text-base text-[#00f0ff] tracking-[0.15em] sm:tracking-[0.2em] drop-shadow-[0_0_8px_rgba(0,240,255,0.5)]">
                 DISASTERLINK
               </span>
-              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-[#e5b849]/15 text-[#e5b849] border border-[#e5b849]/30">
-                NER 2.0
+              <span className="text-[9px] sm:text-[10px] font-mono font-bold px-1 sm:px-1.5 py-0.2 sm:py-0.5 rounded bg-[#e5b849]/15 text-[#e5b849] border border-[#e5b849]/30">
+                NER
               </span>
             </div>
-            <span className="text-[8px] font-mono text-[#94a3b8] tracking-widest uppercase">
+            <span className="hidden sm:inline text-[8px] font-mono text-[#94a3b8] tracking-widest uppercase">
               LANDSLIDE INTELLIGENCE • REAL-TIME GLOBAL MONITORING
             </span>
           </div>
@@ -128,11 +128,11 @@ export const TopBar = () => {
       </div>
 
       {/* Right Controls & Actions */}
-      <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-1.5 sm:gap-2.5">
         {/* Safest Route to Nearest Shelter Button */}
         <button
           onClick={routeToNearestShelter}
-          className={`osiris-btn transition-all ${
+          className={`osiris-btn px-2 sm:px-2.5 py-1 text-[10px] sm:text-[11px] transition-all ${
             activeRoute 
               ? 'border-[#00ff66] text-[#00ff66] bg-[#00ff66]/20 shadow-[0_0_15px_rgba(0,255,102,0.4)]' 
               : 'border-[#00ff66]/50 text-[#00ff66] hover:bg-[#00ff66]/15'
@@ -140,16 +140,16 @@ export const TopBar = () => {
           title="Show safest driving & evacuation direction to nearest emergency shelter"
         >
           <Navigation size={13} className={activeRoute ? 'text-[#00ff66] animate-pulse' : 'text-[#00ff66]'} />
-          <span className="font-bold">{activeRoute ? 'END ROUTE' : 'SHELTER ROUTE'}</span>
+          <span className="font-bold hidden xs:inline sm:inline">{activeRoute ? 'END ROUTE' : 'SHELTER'}</span>
         </button>
 
         {/* Emergency Chat Button */}
         <button
           onClick={toggleChat}
-          className="osiris-btn border-[#00f0ff]/50 text-[#00f0ff] hover:bg-[#00f0ff]/15 relative"
+          className="osiris-btn px-2 sm:px-2.5 py-1 text-[10px] sm:text-[11px] border-[#00f0ff]/50 text-[#00f0ff] hover:bg-[#00f0ff]/15 relative"
         >
           <MessageSquare size={13} className="text-[#00f0ff]" />
-          <span>CHAT</span>
+          <span className="hidden xs:inline sm:inline">CHAT</span>
           {unreadCount > 0 && (
             <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse ml-0.5" />
           )}

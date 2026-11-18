@@ -26,7 +26,7 @@ export const EarlyWarningPanel = () => {
         initial={{ opacity: 0, x: 320, scale: 0.95 }}
         animate={{ opacity: 1, x: 0, scale: 1 }}
         exit={{ opacity: 0, x: 320, scale: 0.95 }}
-        className="fixed right-3 top-14 bottom-20 z-50 w-[340px] md:w-[420px] glass-panel-strong border border-[var(--color-dx-cyan)]/30 rounded-xl shadow-2xl flex flex-col overflow-hidden backdrop-blur-xl"
+        className="fixed left-2 sm:left-auto right-2 sm:right-3 top-14 bottom-16 sm:bottom-20 z-50 w-auto sm:w-[360px] md:w-[420px] glass-panel-strong border border-[var(--color-dx-cyan)]/30 rounded-xl shadow-2xl flex flex-col overflow-hidden backdrop-blur-xl"
       >
         {/* Header */}
         <div className="bg-[rgba(0,240,255,0.08)] px-4 py-3 border-b border-[rgba(0,240,255,0.15)] flex items-center justify-between shrink-0">

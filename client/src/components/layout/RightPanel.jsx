@@ -7,9 +7,10 @@ import { DISASTER_TYPE_CONFIG } from '../../types/disaster';
 import { StatusIndicator } from '../common/StatusIndicator';
 import { useWarningStore } from '../../stores/warningStore';
 import { useLandslideStore } from '../../stores/landslideStore';
-import { Activity, MapPin, Clock, ChevronRight, Zap, Cpu, HardDrive, Gauge, Shield } from 'lucide-react';
+import { Activity, MapPin, Clock, ChevronRight, Zap, Cpu, HardDrive, Gauge, Shield, X } from 'lucide-react';
 export const RightPanel = () => {
   const rightPanelOpen = useUIStore(s => s.rightPanelOpen);
+  const toggleRightPanel = useUIStore(s => s.toggleRightPanel);
   const disasters = useDisasterStore(s => s.disasters);
   const setSelectedDisaster = useDisasterStore(s => s.setSelectedDisaster);
   const flyTo = useMapStore(s => s.flyTo);
@@ -48,8 +49,8 @@ export const RightPanel = () => {
       type: 'spring',
       damping: 25,
       stiffness: 300
-    }} className="fixed right-3 top-16 bottom-12 z-40 w-[300px] overflow-y-auto
-            glass-panel-strong border-[#e5b849]/30 p-4 flex flex-col gap-4">
+    }} className="fixed right-2 sm:right-3 top-14 sm:top-16 bottom-16 sm:bottom-12 z-40 w-[calc(100vw-1rem)] sm:w-[300px] max-w-sm overflow-y-auto
+            glass-panel-strong border-[#e5b849]/30 p-3 sm:p-4 flex flex-col gap-4">
           {/* Active warnings and alerts */}
           <div>
             <div className="flex items-center justify-between mb-3">
@@ -57,9 +58,18 @@ export const RightPanel = () => {
                 <Activity size={14} className="text-[var(--color-dx-critical)]" />
                 <span className="telemetry-label">EARLY WARNING ALERTS</span>
               </div>
-              <span className="font-mono text-xs text-[var(--color-dx-cyan)]">
-                {activeWarnings.length}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-xs text-[var(--color-dx-cyan)]">
+                  {activeWarnings.length}
+                </span>
+                <button
+                  onClick={toggleRightPanel}
+                  className="sm:hidden p-1 rounded hover:bg-white/10 text-gray-400 hover:text-white"
+                  title="Close Drawer"
+                >
+                  <X size={16} />
+                </button>
+              </div>
             </div>
 
             <div className="flex flex-col gap-1.5 max-h-[160px] overflow-y-auto custom-scrollbar">

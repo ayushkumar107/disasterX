@@ -83,8 +83,8 @@ export const BottomNav = () => {
   };
 
   return (
-    <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-40">
-      <div className="glass-panel-strong border-[#00f0ff]/30 px-2 py-1.5 flex items-center gap-1 shadow-2xl">
+    <div className="fixed bottom-9 sm:bottom-10 left-1/2 -translate-x-1/2 z-40 w-[calc(100vw-1rem)] sm:w-auto max-w-full flex justify-center">
+      <div className="glass-panel-strong border-[#00f0ff]/30 px-1 sm:px-2 py-1 sm:py-1.5 flex items-center gap-0.5 sm:gap-1 shadow-2xl overflow-x-auto max-w-full no-scrollbar">
         {navItems.map(item => {
           const isActive = item.id === 'route' ? activeRoute !== null : (activePanel === item.panel && item.panel !== undefined);
           const isDisabled = item.requiresAuth && !isAuthenticated;
@@ -95,8 +95,8 @@ export const BottomNav = () => {
               whileTap={{ scale: isDisabled ? 1 : 0.95 }} 
               onClick={() => handleClick(item)} 
               disabled={isDisabled} 
-              className={`relative flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg
-                  transition-all duration-200 min-w-[62px]
+              className={`relative flex flex-col items-center gap-0.5 px-2 sm:px-3 py-1 sm:py-2 rounded-lg shrink-0
+                  transition-all duration-200 min-w-[50px] sm:min-w-[62px]
                   ${isDisabled 
                     ? 'opacity-30 cursor-not-allowed' 
                     : item.danger 
@@ -113,7 +113,7 @@ export const BottomNav = () => {
               {item.danger && !isDisabled && <span className="absolute -top-1 -right-1 w-2 h-2 bg-[var(--color-dx-critical)] rounded-full animate-blink" />}
               {item.highlight && activeRoute && <span className="absolute -top-1 -right-1 w-2 h-2 bg-[#00ff66] rounded-full animate-ping" />}
               {item.icon}
-              <span className="text-[9px] font-medium tracking-wide">{item.label}</span>
+              <span className="text-[8px] sm:text-[9px] font-medium tracking-wide whitespace-nowrap">{item.label}</span>
             </motion.button>
           );
         })}

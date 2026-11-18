@@ -38,7 +38,7 @@ export const OSIRISInspectorModal = () => {
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="fixed right-6 bottom-14 z-50 w-[360px] rounded-xl bg-[#050a14]/95 backdrop-blur-xl border border-[#e5b849]/40 p-4 shadow-[0_0_40px_rgba(0,0,0,0.8)] font-mono"
+        className="fixed left-2 sm:left-auto right-2 sm:right-6 bottom-16 sm:bottom-14 z-50 w-auto sm:w-[360px] max-w-sm max-h-[80vh] overflow-y-auto rounded-xl bg-[#050a14]/95 backdrop-blur-xl border border-[#e5b849]/40 p-3 sm:p-4 shadow-[0_0_40px_rgba(0,0,0,0.8)] font-mono"
       >
         {/* Header */}
         <div className="flex items-start justify-between border-b border-white/10 pb-3 mb-3">

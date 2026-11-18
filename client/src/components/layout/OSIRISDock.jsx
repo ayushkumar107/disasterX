@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useUIStore } from '../../stores/uiStore';
 import { useMapStore } from '../../stores/mapStore';
 import { useWeatherStore } from '../../stores/weatherStore';
@@ -23,11 +23,14 @@ import {
   Zap,
   Shield,
   MessageSquare,
-  Navigation
+  Navigation,
+  Menu,
+  X
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const OSIRISDock = () => {
+  const [mobileOpen, setMobileOpen] = useState(false);
   const { activePanel, setActivePanel, leftPanelOpen, toggleLeftPanel } = useUIStore();
   const { showLayers, toggleLayer } = useMapStore();
   const toggleWeatherPanel = useWeatherStore((s) => s.togglePanel);
@@ -148,40 +151,56 @@ export const OSIRISDock = () => {
   ];
 
   return (
-    <aside className="fixed left-3 top-20 z-40 flex flex-col items-center gap-1.5 p-1.5 
-      rounded-xl bg-[#050912]/85 backdrop-blur-xl border border-[#00f0ff]/25 shadow-2xl">
-      {dockButtons.map((btn) => {
-        const isDisabled = btn.requiresAuth && !isAuthenticated;
-        return (
-          <button
-            key={btn.id}
-            onClick={btn.onClick}
-            disabled={isDisabled}
-            title={btn.label}
-            className={`osiris-dock-item group relative ${btn.active ? 'active' : ''} ${
-              isDisabled ? 'opacity-30 cursor-not-allowed' : ''
-            } ${btn.danger ? 'text-red-400 hover:text-red-300 hover:bg-red-500/20' : ''}`}
-          >
-            {btn.icon}
+    <>
+      {/* Mobile Floating Dock Trigger */}
+      <button
+        onClick={() => setMobileOpen(!mobileOpen)}
+        className="sm:hidden fixed left-2 top-14 z-40 px-2.5 py-1.5 rounded-lg bg-[#050912]/90 backdrop-blur-md border border-[#00f0ff]/40 text-[#00f0ff] shadow-lg flex items-center gap-1.5 transition-all active:scale-95"
+        title="Toggle Intelligence Dock"
+      >
+        <Globe size={15} className={mobileOpen ? 'text-amber-400 rotate-90 transition-transform' : 'transition-transform'} />
+        <span className="text-[10px] font-mono font-bold tracking-wider">{mobileOpen ? 'CLOSE' : 'DOCK'}</span>
+      </button>
 
-            {/* Tooltip Popup */}
-            <span className="absolute left-12 px-2.5 py-1 rounded bg-[#070e18] border border-[#00f0ff]/40 
-              text-[10px] font-mono text-[#00f0ff] whitespace-nowrap opacity-0 group-hover:opacity-100 
-              pointer-events-none transition-opacity duration-150 shadow-xl z-50">
-              {btn.label}
-            </span>
+      {/* Dock Container */}
+      <aside className={`${mobileOpen ? 'flex' : 'hidden'} sm:flex fixed left-2 sm:left-3 top-24 sm:top-20 z-40 flex-col items-center gap-1.5 p-1.5 
+        rounded-xl bg-[#050912]/90 backdrop-blur-xl border border-[#00f0ff]/25 shadow-2xl max-h-[calc(100vh-140px)] overflow-y-auto no-scrollbar`}>
+        {dockButtons.map((btn) => {
+          const isDisabled = btn.requiresAuth && !isAuthenticated;
+          return (
+            <button
+              key={btn.id}
+              onClick={() => {
+                btn.onClick();
+                setMobileOpen(false);
+              }}
+              disabled={isDisabled}
+              title={btn.label}
+              className={`osiris-dock-item group relative ${btn.active ? 'active' : ''} ${
+                isDisabled ? 'opacity-30 cursor-not-allowed' : ''
+              } ${btn.danger ? 'text-red-400 hover:text-red-300 hover:bg-red-500/20' : ''}`}
+            >
+              {btn.icon}
 
-            {/* Badge pill */}
-            {btn.badge && (
-              <span className={`absolute -top-1 -right-1 px-1 py-0.2 text-[7px] font-mono font-bold rounded ${
-                btn.id === 'shelter_route' ? 'bg-emerald-500 text-black' : 'bg-cyan-500 text-black'
-              } animate-pulse`}>
-                {btn.badge}
+              {/* Tooltip Popup */}
+              <span className="absolute left-12 px-2.5 py-1 rounded bg-[#070e18] border border-[#00f0ff]/40 
+                text-[10px] font-mono text-[#00f0ff] whitespace-nowrap opacity-0 group-hover:opacity-100 
+                pointer-events-none transition-opacity duration-150 shadow-xl z-50">
+                {btn.label}
               </span>
-            )}
-          </button>
-        );
-      })}
-    </aside>
+
+              {/* Badge pill */}
+              {btn.badge && (
+                <span className={`absolute -top-1 -right-1 px-1 py-0.2 text-[7px] font-mono font-bold rounded ${
+                  btn.id === 'shelter_route' ? 'bg-emerald-500 text-black' : 'bg-cyan-500 text-black'
+                } animate-pulse`}>
+                  {btn.badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </aside>
+    </>
   );
 };

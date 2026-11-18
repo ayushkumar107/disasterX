@@ -30,7 +30,7 @@ export const BottomTicker = () => {
     <div className="fixed bottom-0 left-0 right-0 z-50 h-8 bg-[#03060a]/95 backdrop-blur-md border-t border-[#e5b849]/20 flex items-center justify-between px-3 text-[10px] font-mono select-none shadow-2xl">
       
       {/* Left items: Docs & Quick Stats */}
-      <div className="flex items-center gap-3 shrink-0 pr-3 border-r border-white/10 z-10 bg-[#03060a]">
+      <div className="hidden sm:flex items-center gap-3 shrink-0 pr-3 border-r border-white/10 z-10 bg-[#03060a]">
         <a 
           href="/api/health" 
           target="_blank" 
