@@ -11,8 +11,9 @@ export const useSocketStore = create((set, get) => ({
   connectSocket: (accessToken) => {
     if (get().socket) return;
 
-    // Connect to Socket.IO (proxy handles /socket.io in Vite)
-    const socket = io({
+    // Connect to Socket.IO (uses VITE_WS_URL in production, or proxy origin in dev)
+    const wsEndpoint = import.meta.env.VITE_WS_URL || undefined;
+    const socket = io(wsEndpoint, {
       auth: accessToken ? { token: accessToken } : {},
       reconnectionAttempts: 5,
       timeout: 10000

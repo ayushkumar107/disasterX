@@ -15,9 +15,10 @@ const { Server } = require("socket.io");
 let io = null;
 
 function setupSocketIO(httpServer, clientUrl) {
+  const allowedOrigins = (clientUrl || 'http://localhost:5173').split(',').map(s => s.trim());
   io = new Server(httpServer, {
     cors: {
-      origin: clientUrl || 'http://localhost:5173',
+      origin: allowedOrigins.length === 1 ? allowedOrigins[0] : allowedOrigins,
       methods: ['GET', 'POST'],
       credentials: true
     },

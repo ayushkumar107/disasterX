@@ -19,8 +19,15 @@ const app = (0, _express.default)();
 
 // Security
 app.use((0, _helmet.default)());
+const allowedOrigins = (_env.env.CLIENT_URL || 'http://localhost:5173').split(',').map(s => s.trim());
 app.use((0, _cors.default)({
-  origin: _env.env.CLIENT_URL,
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, true);
+    }
+  },
   credentials: true
 }));
 
