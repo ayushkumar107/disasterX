@@ -10,20 +10,54 @@ exports.emitWarning = emitWarning;
 exports.emitRiskUpdate = emitRiskUpdate;
 
 var _logger = require("../utils/logger");
+var _jwt = require("../utils/jwt");
 const { Server } = require("socket.io");
 
 let io = null;
 
 function setupSocketIO(httpServer, clientUrl) {
-  const allowedOrigins = (clientUrl || 'http://localhost:5173').split(',').map(s => s.trim());
+  const configuredOrigins = (clientUrl || '')
+    .split(',')
+    .map(s => s.trim().replace(/\/$/, ''))
+    .filter(Boolean);
+
+  const allowedOrigins = Array.from(new Set([
+    'https://disaster-x-amber.vercel.app',
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    ...configuredOrigins
+  ]));
+
   io = new Server(httpServer, {
     cors: {
-      origin: allowedOrigins.length === 1 ? allowedOrigins[0] : allowedOrigins,
+      origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps, curl, server-to-server)
+        if (!origin) return callback(null, true);
+        const normalizedOrigin = origin.replace(/\/$/, '');
+        if (allowedOrigins.includes(normalizedOrigin)) {
+          return callback(null, true);
+        }
+        return callback(new Error(`CORS origin not allowed: ${origin}`));
+      },
       methods: ['GET', 'POST'],
       credentials: true
     },
     pingTimeout: 60000,
     pingInterval: 25000
+  });
+
+  // Preserve Socket.IO JWT authentication
+  io.use((socket, next) => {
+    const token = socket.handshake.auth?.token;
+    if (token) {
+      try {
+        const decoded = (0, _jwt.verifyAccessToken)(token);
+        socket.user = decoded;
+      } catch (err) {
+        _logger.logger.warn({ socketId: socket.id, error: err.message }, 'Socket.IO JWT verification warning');
+      }
+    }
+    next();
   });
 
   io.on('connection', (socket) => {

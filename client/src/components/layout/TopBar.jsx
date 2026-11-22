@@ -64,25 +64,25 @@ export const TopBar = () => {
       bg-[#03060a]/90 backdrop-blur-md border-b border-[#00f0ff]/20 shadow-2xl">
       
       {/* Left Branding: Logo & Title */}
-      <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+      <div className="flex items-center gap-1 sm:gap-3 shrink-0">
         <button
           onClick={toggleLeftPanel}
-          className="p-1.5 rounded text-[#94a3b8] hover:text-[#00f0ff] hover:bg-white/5 transition-colors"
+          className="p-1 sm:p-1.5 rounded text-[#94a3b8] hover:text-[#00f0ff] hover:bg-white/5 transition-colors"
           title="Toggle Drawer"
         >
           {leftPanelOpen ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
         </button>
 
-        <div className="flex items-center gap-1.5 sm:gap-2.5 group cursor-pointer" onClick={() => navigate('/')}>
+        <div className="flex items-center gap-1 sm:gap-2.5 group cursor-pointer" onClick={() => navigate('/')}>
           {/* Tactical Logo Icon */}
-          <div className="relative w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded bg-[#070e18] border border-[#00f0ff]/50 shadow-[0_0_12px_rgba(0,240,255,0.3)] shrink-0">
-            <Globe size={16} className="text-[#00f0ff] animate-pulse sm:w-[18px] sm:h-[18px]" />
+          <div className="relative w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center rounded bg-[#070e18] border border-[#00f0ff]/50 shadow-[0_0_12px_rgba(0,240,255,0.3)] shrink-0">
+            <Globe size={15} className="text-[#00f0ff] animate-pulse sm:w-[18px] sm:h-[18px]" />
             <div className="absolute inset-0 rounded border border-[#00f0ff]/20 scale-110 animate-ping opacity-25" />
           </div>
 
           <div className="flex flex-col leading-tight">
             <div className="flex items-center gap-1 sm:gap-2">
-              <span className="font-osiris font-black text-xs sm:text-base text-[#00f0ff] tracking-[0.1em] sm:tracking-[0.2em] drop-shadow-[0_0_8px_rgba(0,240,255,0.5)]">
+              <span className="font-osiris font-black text-[11px] sm:text-base text-[#00f0ff] tracking-tight sm:tracking-[0.2em] drop-shadow-[0_0_8px_rgba(0,240,255,0.5)]">
                 DISASTERLINK
               </span>
               <span className="text-[8px] sm:text-[10px] font-mono font-bold px-1 sm:px-1.5 py-0.2 sm:py-0.5 rounded bg-[#e5b849]/15 text-[#e5b849] border border-[#e5b849]/30">
@@ -159,6 +159,7 @@ export const TopBar = () => {
           )}
         </button>
 
+        {/* Support button - Desktop only */}
         <button className="hidden sm:inline-flex osiris-btn">
           <LifeBuoy size={13} className="text-[#e5b849]" />
           <span>SUPPORT</span>
@@ -195,35 +196,26 @@ export const TopBar = () => {
         </div>
 
         {/* Mobile Account Trigger (< 640px) */}
-        <div className="flex sm:hidden items-center">
-          {isAuthenticated ? (
-            <button
-              onClick={() => setMobileAccountOpen(!mobileAccountOpen)}
-              className="flex items-center gap-1 px-1.5 py-1 rounded bg-[#070e18] border border-[#00f0ff]/40 text-[#00f0ff] hover:border-[#00f0ff] transition-all"
-              title="Account & Session"
-              aria-label="Account & Session"
-            >
-              <User size={13} className="text-[#00f0ff]" />
-              <span className="text-[9px] font-mono font-bold text-[#e5b849] max-w-[42px] truncate">
-                {user?.role || 'USER'}
-              </span>
-            </button>
-          ) : (
-            <button
-              onClick={() => setMobileAccountOpen(!mobileAccountOpen)}
-              className="px-2 py-1 rounded bg-[#e5b849]/15 border border-[#e5b849]/50 text-[#e5b849] text-[10px] font-mono font-bold hover:bg-[#e5b849]/25 transition-all"
-              title="Sign In / Register"
-              aria-label="Sign In / Register"
-            >
-              AUTH
-            </button>
-          )}
-        </div>
+        <button
+          onClick={() => setMobileAccountOpen(!mobileAccountOpen)}
+          className={`sm:hidden shrink-0 flex items-center justify-center gap-1 px-1.5 py-1 h-8 rounded-lg border transition-all ${
+            isAuthenticated
+              ? 'bg-[#070e18] border-[#00f0ff]/60 text-[#00f0ff] shadow-[0_0_12px_rgba(0,240,255,0.3)]'
+              : 'bg-[#e5b849]/15 border-[#e5b849]/60 text-[#e5b849]'
+          }`}
+          title={isAuthenticated ? `Account: ${user?.name || user?.role || 'User'}` : 'Account & Login'}
+          aria-label="User Account Menu"
+        >
+          <User size={15} className={isAuthenticated ? 'text-[#00f0ff]' : 'text-[#e5b849]'} />
+          <span className="hidden min-[380px]:inline text-[10px] font-mono font-bold uppercase max-w-[50px] truncate">
+            {isAuthenticated ? (user?.role || 'USER') : 'LOGIN'}
+          </span>
+        </button>
 
         {/* Telemetry Toggle Panel */}
         <button
           onClick={toggleRightPanel}
-          className="p-1.5 rounded text-[#94a3b8] hover:text-[#00f0ff] hover:bg-white/5 transition-colors"
+          className="p-1.5 rounded text-[#94a3b8] hover:text-[#00f0ff] hover:bg-white/5 transition-colors shrink-0"
           title="Toggle Telemetry Panel"
         >
           {rightPanelOpen ? <PanelRightClose size={18} /> : <PanelRightOpen size={18} />}
@@ -246,7 +238,7 @@ export const TopBar = () => {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
               transition={{ duration: 0.15 }}
-              className="absolute right-2 top-14 z-50 w-72 rounded-xl bg-[#050a14]/95 backdrop-blur-xl border border-[#00f0ff]/40 p-3.5 shadow-[0_0_30px_rgba(0,240,255,0.25)] font-mono sm:hidden"
+              className="fixed right-2 top-14 z-50 w-[calc(100vw-1rem)] max-w-xs rounded-xl bg-[#050a14]/98 backdrop-blur-xl border border-[#00f0ff]/40 p-3.5 shadow-[0_0_35px_rgba(0,0,0,0.9)] font-mono sm:hidden"
             >
               {/* Header */}
               <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-white/10">

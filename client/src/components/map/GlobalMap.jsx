@@ -11,32 +11,46 @@ import { useRainfallStore } from '../../stores/rainfallStore';
 import { DISASTER_TYPE_CONFIG, SEVERITY_CONFIG, RISK_LEVEL_CONFIG } from '../../types/disaster';
 import { distance, point } from '@turf/turf';
 import { SUBSEA_CABLES_GEOJSON, GLOBAL_INCIDENTS, getSolarTerminatorGeoJSON } from '../../utils/osirisGeoData';
-const CARTO_DARK_STYLE = {
+const DARK_MAP_STYLE = {
   version: 8,
   sources: {
-    'carto-dark-tiles': {
+    'esri-dark-base': {
       type: 'raster',
       tiles: [
-        'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-        'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-        'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-        'https://d.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
+        'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
       ],
       tileSize: 256,
-      maxzoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+      maxzoom: 16,
+      attribution: '&copy; <a href="https://www.esri.com/">Esri</a>, HERE, Garmin, &copy; OpenStreetMap contributors, and the GIS user community'
+    },
+    'esri-dark-ref': {
+      type: 'raster',
+      tiles: [
+        'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}'
+      ],
+      tileSize: 256,
+      maxzoom: 16
     }
   },
   layers: [
     {
-      id: 'carto-dark-layer',
+      id: 'esri-dark-base-layer',
       type: 'raster',
-      source: 'carto-dark-tiles',
+      source: 'esri-dark-base',
+      minzoom: 0,
+      maxzoom: 22
+    },
+    {
+      id: 'esri-dark-ref-layer',
+      type: 'raster',
+      source: 'esri-dark-ref',
       minzoom: 0,
       maxzoom: 22
     }
   ]
 };
+
+const CARTO_DARK_STYLE = DARK_MAP_STYLE;
 
 const SATELLITE_STYLE = {
   version: 8,
