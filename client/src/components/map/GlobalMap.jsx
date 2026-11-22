@@ -11,7 +11,32 @@ import { useRainfallStore } from '../../stores/rainfallStore';
 import { DISASTER_TYPE_CONFIG, SEVERITY_CONFIG, RISK_LEVEL_CONFIG } from '../../types/disaster';
 import { distance, point } from '@turf/turf';
 import { SUBSEA_CABLES_GEOJSON, GLOBAL_INCIDENTS, getSolarTerminatorGeoJSON } from '../../utils/osirisGeoData';
-const CARTO_DARK_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
+const CARTO_DARK_STYLE = {
+  version: 8,
+  sources: {
+    'carto-dark-tiles': {
+      type: 'raster',
+      tiles: [
+        'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+        'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+        'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+        'https://d.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
+      ],
+      tileSize: 256,
+      maxzoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    }
+  },
+  layers: [
+    {
+      id: 'carto-dark-layer',
+      type: 'raster',
+      source: 'carto-dark-tiles',
+      minzoom: 0,
+      maxzoom: 22
+    }
+  ]
+};
 
 const SATELLITE_STYLE = {
   version: 8,
@@ -22,7 +47,8 @@ const SATELLITE_STYLE = {
         'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
       ],
       tileSize: 256,
-      maxzoom: 19
+      maxzoom: 19,
+      attribution: '&copy; <a href="https://www.esri.com/">Esri</a>'
     }
   },
   layers: [
@@ -34,6 +60,58 @@ const SATELLITE_STYLE = {
       maxzoom: 22
     }
   ]
+};
+
+const addCustomTacticalLayers = (map) => {
+  if (!map) return;
+
+  // 1. Add Subsea Fiber Optic Cables Layer
+  if (!map.getSource('osiris-cables')) {
+    map.addSource('osiris-cables', {
+      type: 'geojson',
+      data: SUBSEA_CABLES_GEOJSON
+    });
+
+    map.addLayer({
+      id: 'osiris-cables-glow',
+      type: 'line',
+      source: 'osiris-cables',
+      paint: {
+        'line-color': '#00f0ff',
+        'line-width': 4,
+        'line-opacity': 0.35
+      }
+    });
+
+    map.addLayer({
+      id: 'osiris-cables-line',
+      type: 'line',
+      source: 'osiris-cables',
+      paint: {
+        'line-color': '#00a8ff',
+        'line-width': 1.5,
+        'line-opacity': 0.8
+      }
+    });
+  }
+
+  // 2. Add Solar Day/Night Shadow Terminator Overlay
+  if (!map.getSource('osiris-terminator')) {
+    map.addSource('osiris-terminator', {
+      type: 'geojson',
+      data: getSolarTerminatorGeoJSON()
+    });
+
+    map.addLayer({
+      id: 'osiris-terminator-layer',
+      type: 'fill',
+      source: 'osiris-terminator',
+      paint: {
+        'fill-color': '#02050c',
+        'fill-opacity': 0.45
+      }
+    });
+  }
 };
 export const GlobalMap = () => {
   const mapContainer = useRef(null);
@@ -155,72 +233,27 @@ export const GlobalMap = () => {
 
     map.addControl(geolocate, 'bottom-right');
     
+    map.on('style.load', () => {
+      addCustomTacticalLayers(map);
+    });
+
     map.on('load', () => {
       geolocate.trigger();
+      addCustomTacticalLayers(map);
 
-      // 1. Add Subsea Fiber Optic Cables Layer
-      if (!map.getSource('osiris-cables')) {
-        map.addSource('osiris-cables', {
-          type: 'geojson',
-          data: SUBSEA_CABLES_GEOJSON
-        });
-
-        // Glow line
-        map.addLayer({
-          id: 'osiris-cables-glow',
-          type: 'line',
-          source: 'osiris-cables',
-          paint: {
-            'line-color': '#00f0ff',
-            'line-width': 4,
-            'line-opacity': 0.35
-          }
-        });
-
-        // Main optic cable line
-        map.addLayer({
-          id: 'osiris-cables-line',
-          type: 'line',
-          source: 'osiris-cables',
-          paint: {
-            'line-color': '#00a8ff',
-            'line-width': 1.5,
-            'line-opacity': 0.8
-          }
-        });
-
-        map.on('click', 'osiris-cables-line', (e) => {
-          if (e.features && e.features[0]) {
-            const props = e.features[0].properties;
-            setSelectedEntity({
-              title: props.name || 'Submarine Optic Fiber Cable',
-              category: 'cables',
-              source: 'Subsea Intelligence Network',
-              capacity: props.capacity || '40 Tbps',
-              coords: [e.lngLat.lng, e.lngLat.lat],
-              details: `High-capacity optical fiber cable route transmitting trans-oceanic telecommunications and cloud data traffic.`
-            });
-          }
-        });
-      }
-
-      // 2. Add Solar Day/Night Shadow Terminator Overlay
-      if (!map.getSource('osiris-terminator')) {
-        map.addSource('osiris-terminator', {
-          type: 'geojson',
-          data: getSolarTerminatorGeoJSON()
-        });
-
-        map.addLayer({
-          id: 'osiris-terminator-layer',
-          type: 'fill',
-          source: 'osiris-terminator',
-          paint: {
-            'fill-color': '#02050c',
-            'fill-opacity': 0.45
-          }
-        });
-      }
+      map.on('click', 'osiris-cables-line', (e) => {
+        if (e.features && e.features[0]) {
+          const props = e.features[0].properties;
+          setSelectedEntity({
+            title: props.name || 'Submarine Optic Fiber Cable',
+            category: 'cables',
+            source: 'Subsea Intelligence Network',
+            capacity: props.capacity || '40 Tbps',
+            coords: [e.lngLat.lng, e.lngLat.lat],
+            details: `High-capacity optical fiber cable route transmitting trans-oceanic telecommunications and cloud data traffic.`
+          });
+        }
+      });
 
       // 3. Add Global Conflict & Strategic Incident Markers (matching OSIRIS UI screenshot)
       GLOBAL_INCIDENTS.forEach((inc) => {
@@ -276,10 +309,15 @@ export const GlobalMap = () => {
     };
   }, []);
 
+  const currentTileModeRef = useRef('MAP');
+
   // Switch between CARTO Dark Matter and Satellite tiles dynamically
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
+    if (currentTileModeRef.current === tileMode) return;
+    currentTileModeRef.current = tileMode;
+
     if (tileMode === 'SAT') {
       map.setStyle(SATELLITE_STYLE);
     } else {
@@ -432,18 +470,15 @@ export const GlobalMap = () => {
       }
     };
 
-    // Wait for map to be fully ready before drawing
-    if (map.loaded()) {
-      console.log('[MAP] Map already loaded, drawing now');
+    // Wait for map style to be fully ready before drawing
+    if (map.isStyleLoaded && map.isStyleLoaded()) {
       drawRoute();
     } else {
-      console.log('[MAP] Map not loaded yet, waiting for load event');
-      map.once('load', () => {
-        console.log('[MAP] Map loaded, drawing now');
+      map.once('style.load', () => {
         drawRoute();
       });
     }
-  }, [activeRoute, destinationCoords]);
+  }, [activeRoute, destinationCoords, tileMode]);
 
   // SVG route path projection for 100% reliable rendering
   const updateSvgPath = useCallback(() => {
