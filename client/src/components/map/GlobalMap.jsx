@@ -151,20 +151,38 @@ export const GlobalMap = () => {
   const {
     userLocation,
     setUserLocation,
+    accuracy,
+    isLocating,
+    isTracking,
+    locationError,
+    setLocationError,
+    clearLocationError,
+    requestLocation,
     setProximityWarnings,
     activeRoute,
     destinationCoords,
     calculateSafeRoute
   } = useLocationStore();
 
+  const userMarkerRef = useRef(null);
+  const geolocateControlRef = useRef(null);
+
   useEffect(() => {
     window.__navigateToShelter = (coords, name) => {
       calculateSafeRoute(coords, name);
     };
+    window.__triggerGeolocate = () => {
+      if (geolocateControlRef.current) {
+        geolocateControlRef.current.trigger();
+      } else {
+        requestLocation(true).catch(e => console.warn('[LOC]', e.message));
+      }
+    };
     return () => {
       delete window.__navigateToShelter;
+      delete window.__triggerGeolocate;
     };
-  }, [calculateSafeRoute]);
+  }, [calculateSafeRoute, requestLocation]);
   
   const { shelters, fetchShelters } = useShelterStore();
   const shelterMarkersRef = useRef(new Map());
@@ -235,25 +253,64 @@ export const GlobalMap = () => {
     // Add Geolocate Control for user's live location
     const geolocate = new maplibregl.GeolocateControl({
       positionOptions: {
-        enableHighAccuracy: true
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 10000
       },
       trackUserLocation: true,
-      showUserHeading: true
+      showUserHeading: true,
+      showAccuracyCircle: true
     });
 
     geolocate.on('geolocate', (e) => {
-      setUserLocation([e.coords.longitude, e.coords.latitude]);
+      setUserLocation(
+        [e.coords.longitude, e.coords.latitude],
+        e.coords.accuracy,
+        e.coords.heading,
+        e.coords.speed
+      );
+    });
+
+    geolocate.on('error', (err) => {
+      let msg = 'Failed to acquire GPS location.';
+      if (err.code === 1) {
+        msg = 'Location permission denied. Please allow location access in your browser settings to enable live GPS.';
+      } else if (err.code === 2) {
+        msg = 'Location unavailable. GPS signal lost or unavailable.';
+      } else if (err.code === 3) {
+        msg = 'Location request timed out. Please check your GPS signal and try again.';
+      }
+      setLocationError(msg);
+    });
+
+    geolocate.on('trackuserlocationstart', () => {
+      useLocationStore.setState({ isTracking: true });
+    });
+
+    geolocate.on('trackuserlocationend', () => {
+      useLocationStore.setState({ isTracking: false });
     });
 
     map.addControl(geolocate, 'bottom-right');
+    geolocateControlRef.current = geolocate;
     
     map.on('style.load', () => {
       addCustomTacticalLayers(map);
     });
 
     map.on('load', () => {
-      geolocate.trigger();
       addCustomTacticalLayers(map);
+
+      // Check if geolocation permission was previously granted before auto-triggering
+      if (typeof navigator !== 'undefined' && navigator.permissions?.query) {
+        navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+          if (result.state === 'granted') {
+            geolocate.trigger();
+          }
+        }).catch(() => {
+          // Ignore permissions query failure
+        });
+      }
 
       map.on('click', 'osiris-cables-line', (e) => {
         if (e.features && e.features[0]) {
@@ -316,6 +373,11 @@ export const GlobalMap = () => {
 
     return () => {
       resizeObserver.disconnect();
+      useLocationStore.getState().stopTracking();
+      if (userMarkerRef.current) {
+        userMarkerRef.current.remove();
+        userMarkerRef.current = null;
+      }
       map.remove();
       mapRef.current = null;
       const style = document.getElementById('map-animation-styles');
@@ -728,6 +790,68 @@ export const GlobalMap = () => {
     });
   }, [disasters, filters, showLayers.disasters, createMarkerElement, createPopupContent, setSelectedDisaster]);
 
+  // Render User Location Tactical Marker
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    // Clean up if layer hidden or no location
+    if (!showLayers.userLocation || !userLocation) {
+      if (userMarkerRef.current) {
+        userMarkerRef.current.remove();
+        userMarkerRef.current = null;
+      }
+      return;
+    }
+
+    const [lng, lat] = userLocation;
+
+    // If marker already exists, smoothly update its position
+    if (userMarkerRef.current) {
+      userMarkerRef.current.setLngLat([lng, lat]);
+      return;
+    }
+
+    const el = document.createElement('div');
+    el.className = 'user-tactical-marker cursor-pointer select-none';
+    el.innerHTML = `
+      <div style="position: relative; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;">
+        <div style="position: absolute; width: 36px; height: 36px; border-radius: 50%; background: rgba(0, 255, 102, 0.25); animation: ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+        <div style="position: absolute; width: 22px; height: 22px; border-radius: 50%; background: rgba(0, 255, 102, 0.45); border: 1px solid rgba(0, 255, 102, 0.8);"></div>
+        <div style="position: relative; width: 10px; height: 10px; border-radius: 50%; background: #00ff66; border: 2px solid #ffffff; box-shadow: 0 0 10px #00ff66, 0 0 20px #00ff66;"></div>
+      </div>
+    `;
+
+    const accuracyText = accuracy ? `Accuracy: ±${Math.round(accuracy)}m` : 'Live GPS Verified';
+
+    const popup = new maplibregl.Popup({
+      offset: 18,
+      closeButton: true,
+      closeOnClick: false,
+      maxWidth: '280px'
+    }).setHTML(`
+      <div style="padding: 10px; font-family: monospace; background: #070e18; color: #f8fafc; border: 1px solid rgba(0, 255, 102, 0.4); border-radius: 8px;">
+        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+          <span style="color: #00ff66; font-size: 14px;">📍</span>
+          <span style="color: #00ff66; font-weight: bold; font-size: 12px; letter-spacing: 0.05em;">YOUR LIVE LOCATION</span>
+        </div>
+        <div style="font-size: 11px; color: #94a3b8; margin-bottom: 4px;">
+          Coordinates: <strong style="color: #ffffff;">${lat.toFixed(5)}°N, ${lng.toFixed(5)}°E</strong>
+        </div>
+        <div style="font-size: 10px; color: #00ff66; background: rgba(0, 255, 102, 0.1); padding: 2px 6px; border-radius: 4px; display: inline-block;">
+          ${accuracyText}
+        </div>
+      </div>
+    `);
+
+    const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+      .setLngLat([lng, lat])
+      .setPopup(popup)
+      .addTo(map);
+
+    userMarkerRef.current = marker;
+  }, [userLocation, showLayers.userLocation, accuracy]);
+
   // Render shelter markers
   useEffect(() => {
     if (!mapRef.current) return;
@@ -1039,6 +1163,22 @@ export const GlobalMap = () => {
   return (
     <div className="absolute inset-0 overflow-hidden" style={{ top: '48px' }}>
       <div ref={mapContainer} className="w-full h-full" />
+
+      {/* Location Error Alert Banner */}
+      {locationError && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 max-w-md w-[calc(100vw-2rem)] p-2.5 rounded-lg bg-red-950/90 border border-red-500/50 backdrop-blur-md shadow-2xl flex items-center justify-between gap-2 text-xs font-mono text-red-200">
+          <div className="flex items-center gap-2 truncate">
+            <span className="text-red-400 font-bold shrink-0">⚠️ GPS:</span>
+            <span className="truncate">{locationError}</span>
+          </div>
+          <button
+            onClick={clearLocationError}
+            className="px-2 py-0.5 rounded bg-red-500/20 hover:bg-red-500/30 text-white shrink-0 font-bold"
+          >
+            DISMISS
+          </button>
+        </div>
+      )}
       <svg className="absolute inset-0 pointer-events-none z-10 w-full h-full overflow-visible">
         <defs>
           <filter id="routeGlow" x="-50%" y="-50%" width="200%" height="200%">
@@ -1126,6 +1266,29 @@ export const GlobalMap = () => {
             className={`osiris-pill flex items-center gap-1 text-[9px] sm:text-xs px-1.5 sm:px-2.5 py-1 ${tileMode === 'SAT' ? 'active' : ''}`}
           >
             <span>📡 SAT</span>
+          </button>
+
+          <div className="h-4 w-px bg-white/10 mx-0.5" />
+
+          <button
+            onClick={() => {
+              if (!userLocation) {
+                if (typeof window !== 'undefined' && window.__triggerGeolocate) {
+                  window.__triggerGeolocate();
+                } else {
+                  requestLocation(true).catch(e => console.warn('[LOC]', e.message));
+                }
+              } else {
+                if (mapRef.current) {
+                  mapRef.current.flyTo({ center: userLocation, zoom: 15, duration: 1200 });
+                }
+              }
+            }}
+            className={`osiris-pill flex items-center gap-1 text-[9px] sm:text-xs px-1.5 sm:px-2.5 py-1 ${userLocation ? 'border-[#00ff66]/60 text-[#00ff66]' : ''}`}
+            title={userLocation ? 'Fly to Live Location' : 'Detect Live GPS Location'}
+          >
+            <span>📍</span>
+            <span>{isLocating ? 'LOCATING...' : (userLocation ? 'MY GPS' : 'LOCATE')}</span>
           </button>
         </div>
 

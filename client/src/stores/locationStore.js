@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import api from '../services/api';
+import { useMapStore } from './mapStore';
 
 // Helper to compute spherical distance between [lng, lat]
 function haversineKm(p1, p2) {
@@ -34,30 +35,150 @@ function generateSafeCorridorWaypoints(start, end) {
 
 export const useLocationStore = create((set, get) => ({
   userLocation: null,
+  accuracy: null,
+  heading: null,
+  speed: null,
+  isLocating: false,
+  isTracking: false,
+  locationError: null,
+  watchId: null,
+
   activeRoute: null,
   isRouting: false,
   routeError: null,
   proximityWarnings: [],
   destinationCoords: null,
   
-  setUserLocation: (coords) => set({ userLocation: coords }),
+  setUserLocation: (coords, accuracy = null, heading = null, speed = null) => {
+    set({
+      userLocation: coords,
+      accuracy: accuracy !== null ? accuracy : get().accuracy,
+      heading: heading !== null ? heading : get().heading,
+      speed: speed !== null ? speed : get().speed,
+      locationError: null
+    });
+  },
+
+  setLocationError: (err) => set({ locationError: err, isLocating: false }),
+  clearLocationError: () => set({ locationError: null }),
+
+  requestLocation: async (flyToMap = true) => {
+    if (typeof window === 'undefined' || !navigator.geolocation) {
+      const msg = 'Geolocation is not supported by your browser.';
+      set({ locationError: msg, isLocating: false });
+      return Promise.reject(new Error(msg));
+    }
+
+    if (!window.isSecureContext) {
+      const msg = 'Geolocation requires a secure HTTPS connection.';
+      set({ locationError: msg, isLocating: false });
+      return Promise.reject(new Error(msg));
+    }
+
+    set({ isLocating: true, locationError: null });
+
+    return new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const coords = [pos.coords.longitude, pos.coords.latitude];
+          const accuracy = pos.coords.accuracy;
+          get().setUserLocation(coords, accuracy, pos.coords.heading, pos.coords.speed);
+          set({ isLocating: false, locationError: null });
+
+          if (flyToMap) {
+            useMapStore.getState?.()?.flyTo?.(coords[0], coords[1], 15);
+          }
+          resolve(coords);
+        },
+        (err) => {
+          let msg = 'Failed to acquire GPS location.';
+          if (err.code === 1) {
+            msg = 'Location permission denied. Please allow location access in your browser settings to enable live GPS.';
+          } else if (err.code === 2) {
+            msg = 'Location unavailable. GPS signal lost or unavailable.';
+          } else if (err.code === 3) {
+            msg = 'Location request timed out. Please check your GPS signal and try again.';
+          }
+          set({ locationError: msg, isLocating: false });
+          reject(new Error(msg));
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 10000
+        }
+      );
+    });
+  },
+
+  startTracking: () => {
+    if (typeof window === 'undefined' || !navigator.geolocation) {
+      set({ locationError: 'Geolocation is not supported by your browser.' });
+      return;
+    }
+
+    // Prevent duplicate watchPosition subscriptions from accumulating
+    if (get().isTracking && get().watchId !== null) {
+      return;
+    }
+
+    const oldWatchId = get().watchId;
+    if (oldWatchId !== null) {
+      navigator.geolocation.clearWatch(oldWatchId);
+    }
+
+    set({ isTracking: true, locationError: null });
+
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const coords = [pos.coords.longitude, pos.coords.latitude];
+        const accuracy = pos.coords.accuracy;
+        get().setUserLocation(coords, accuracy, pos.coords.heading, pos.coords.speed);
+        set({ isTracking: true, isLocating: false, locationError: null });
+      },
+      (err) => {
+        let msg = 'Live GPS tracking error.';
+        if (err.code === 1) {
+          msg = 'Location permission denied. Please allow location access in browser settings.';
+        } else if (err.code === 2) {
+          msg = 'Location signal lost.';
+        } else if (err.code === 3) {
+          msg = 'Location tracking timed out.';
+        }
+        set({ locationError: msg, isTracking: false });
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 20000,
+        maximumAge: 5000
+      }
+    );
+
+    set({ watchId });
+  },
+
+  stopTracking: () => {
+    const { watchId } = get();
+    if (watchId !== null && typeof window !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.clearWatch(watchId);
+    }
+    set({ isTracking: false, watchId: null });
+  },
   
   setProximityWarnings: (warnings) => set({ proximityWarnings: warnings }),
   
   // Safe routing using OSRM with turn-by-turn steps, with intelligent safe corridor fallback
   calculateSafeRoute: async (destinationCoords, destinationName = 'Emergency Shelter') => {
-    let { userLocation } = get();
+    const { userLocation } = get();
     
-    // Default to regional center if user has not shared GPS yet
-    if (!userLocation) {
-      userLocation = [91.73, 26.14]; // Guwahati / NER
-      set({ userLocation });
-    }
+    // Default to regional center for routing calculation ONLY if user has not shared GPS yet.
+    // Do NOT overwrite userLocation in the store!
+    const startCoords = userLocation || [91.73, 26.14];
     
     set({ isRouting: true, routeError: null, destinationCoords });
     
     try {
-      const start = `${userLocation[0]},${userLocation[1]}`;
+      const start = `${startCoords[0]},${startCoords[1]}`;
       const end = `${destinationCoords[0]},${destinationCoords[1]}`;
       const url = `https://router.project-osrm.org/route/v1/driving/${start};${end}?overview=full&geometries=geojson&steps=true`;
       
@@ -102,10 +223,10 @@ export const useLocationStore = create((set, get) => ({
     }
 
     // Intelligent Fallback: Generate real safe corridor route avoiding hazards
-    const distKm = haversineKm(userLocation, destinationCoords);
+    const distKm = haversineKm(startCoords, destinationCoords);
     const distMeters = Math.round(distKm * 1000);
     const durationSeconds = Math.round((distKm / 35) * 3600); // 35 km/h driving speed
-    const waypoints = generateSafeCorridorWaypoints(userLocation, destinationCoords);
+    const waypoints = generateSafeCorridorWaypoints(startCoords, destinationCoords);
 
     const fallbackSteps = [
       {

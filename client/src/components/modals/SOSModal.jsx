@@ -93,6 +93,15 @@ export const SOSModal = () => {
                       <span className="text-[var(--color-dx-muted)]">Waiting for location...</span>
                     )}
                   </div>
+                  {!userLocation && (
+                    <button
+                      type="button"
+                      onClick={() => useLocationStore.getState().requestLocation(false).catch(err => alert(err.message))}
+                      className="px-2.5 py-1 rounded bg-[#00ff66]/20 border border-[#00ff66]/50 text-[#00ff66] text-xs font-mono font-bold hover:bg-[#00ff66]/30 transition-all shrink-0"
+                    >
+                      DETECT GPS
+                    </button>
+                  )}
                 </div>
 
                 {/* Severity */}

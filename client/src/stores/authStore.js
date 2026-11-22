@@ -1,5 +1,8 @@
 import { create } from 'zustand';
 import api from '../services/api';
+import { useLocationStore } from './locationStore';
+import { useSocketStore } from './socketStore';
+
 export const useAuthStore = create((set, get) => ({
   user: JSON.parse(localStorage.getItem('user') || 'null'),
   isAuthenticated: !!localStorage.getItem('accessToken'),
@@ -76,6 +79,22 @@ export const useAuthStore = create((set, get) => ({
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
+
+    // Clean up live GPS tracking and clear user location on logout
+    try {
+      useLocationStore.getState().stopTracking();
+      useLocationStore.setState({ userLocation: null, accuracy: null });
+    } catch {
+      // ignore
+    }
+
+    // Disconnect active socket session on logout
+    try {
+      useSocketStore.getState().disconnectSocket();
+    } catch {
+      // ignore
+    }
+
     set({
       user: null,
       isAuthenticated: false

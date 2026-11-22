@@ -135,6 +135,15 @@ export const LandslideReportPanel = () => {
                     <span className="text-red-400">Location required to report.</span>
                   )}
                 </div>
+                {!userLocation && (
+                  <button
+                    type="button"
+                    onClick={() => useLocationStore.getState().requestLocation(false).catch(err => setError(err.message))}
+                    className="px-2 py-0.5 rounded bg-blue-500/20 border border-blue-500/50 text-blue-300 text-xs font-mono font-bold hover:bg-blue-500/30 transition-all shrink-0"
+                  >
+                    GET GPS
+                  </button>
+                )}
               </div>
 
               {/* Title */}

@@ -87,11 +87,6 @@ function setupSocketIO(httpServer, clientUrl) {
       socket.join(`zone:${zoneId}`);
     });
 
-    // User location update
-    socket.on('location:update', (data) => {
-      socket.userData = { ...socket.userData, location: data };
-    });
-
     socket.on('disconnect', () => {
       _logger.logger.info({ socketId: socket.id }, 'Client disconnected');
     });

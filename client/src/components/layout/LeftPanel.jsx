@@ -83,8 +83,16 @@ export const LeftPanel = () => {
       toggleWeatherPanel();
     }
     if (key === 'userLocation') {
-      const userLoc = useLocationStore.getState().userLocation || [92.73, 25.17];
-      flyTo(userLoc[0], userLoc[1], 14);
+      const locStore = useLocationStore.getState();
+      if (!locStore.userLocation) {
+        if (typeof window !== 'undefined' && window.__triggerGeolocate) {
+          window.__triggerGeolocate();
+        } else {
+          locStore.requestLocation(true).catch(e => console.warn('[LOC]', e.message));
+        }
+      } else {
+        flyTo(locStore.userLocation[0], locStore.userLocation[1], 15);
+      }
     }
   };
 
