@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import api from '../services/api';
 
 // Helper to compute spherical distance between [lng, lat]
 function haversineKm(p1, p2) {
@@ -162,9 +163,9 @@ export const useLocationStore = create((set, get) => ({
     set({ isRouting: true });
     
     try {
-      // 1. Try fetching all active shelters
-      const res = await fetch('/api/shelters');
-      const data = await res.json();
+      // 1. Try fetching all active shelters using configured API client
+      const res = await api.get('/shelters');
+      const data = res.data;
       
       let shelterList = [];
       if (data.success && Array.isArray(data.data) && data.data.length > 0) {

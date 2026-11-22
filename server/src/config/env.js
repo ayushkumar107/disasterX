@@ -12,7 +12,7 @@ _dotenv.default.config({
 });
 const env = exports.env = {
   NODE_ENV: process.env.NODE_ENV || 'development',
-  PORT: parseInt(process.env.SERVER_PORT || '5000', 10),
+  PORT: parseInt(process.env.PORT || process.env.SERVER_PORT || '5000', 10),
   MONGODB_URI: process.env.MONGODB_URI || 'mongodb://localhost:27017/disasterx',
   JWT_SECRET: process.env.JWT_SECRET || 'dev-secret-change-in-production',
   JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret-change-in-production',

@@ -25,10 +25,15 @@ api.interceptors.response.use(response => response, async error => {
       if (!refreshToken) {
         throw new Error('No refresh token');
       }
+      const refreshUrl = `${(api.defaults.baseURL || '/api').replace(/\/$/, '')}/auth/refresh`;
       const {
         data
-      } = await axios.post('/api/auth/refresh', {
+      } = await axios.post(refreshUrl, {
         refreshToken
+      }, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
       localStorage.setItem('accessToken', data.accessToken);
       localStorage.setItem('refreshToken', data.refreshToken);

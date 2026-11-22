@@ -52,9 +52,9 @@ const startServer = async () => {
   // Wire up Socket.IO for real-time NER monitoring & Chat
   (0, _socketio.setupSocketIO)(server, _env.env.CLIENT_URL);
 
-  server.listen(_env.env.PORT, () => {
+  server.listen(_env.env.PORT, '0.0.0.0', () => {
     _logger.logger.info(`🚀 DISASTERLINK NER — Landslide Intelligence Platform`);
-    _logger.logger.info(`🏔️ Server running on port ${_env.env.PORT}`);
+    _logger.logger.info(`🏔️ Server running on port ${_env.env.PORT} (0.0.0.0)`);
     _logger.logger.info(`📡 Environment: ${_env.env.NODE_ENV}`);
     _logger.logger.info(`🔗 Client URL: ${_env.env.CLIENT_URL}`);
     _logger.logger.info(`🔌 Socket.IO: Active`);
